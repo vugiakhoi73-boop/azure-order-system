@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Mock Order System</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f6f9; display: flex; justify-content: center; padding-top: 50px; }
+        .card { background: #fff; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 350px; }
+        input, button { width: 100%; padding: 10px; margin-top: 10px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { background: #0078d4; color: white; font-weight: bold; cursor: pointer; border: none; }
+        button:hover { background: #005a9e; }
+        #status { margin-top: 15px; font-weight: bold; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Tạo Đơn Hàng Mới</h2>
+        <input type="text" id="customerName" placeholder="Tên khách hàng" value="Vũ Gia Khôi">
+        <input type="text" id="item" placeholder="Tên sản phẩm" value="Laptop MSI Thin 15">
+        <input type="number" id="price" placeholder="Giá tiền (VNĐ)" value="15000000">
+        <button onclick="sendOrder()">Gửi Đơn Hàng</button>
+        <div id="status"></div>
+    </div>
+
+    <script>
+        const FUNCTION_URL = 'https://fn-order-vugiakhoi.azurewebsites.net/api/CreateOrder';
+
+        async function sendOrder() {
+            const statusDiv = document.getElementById('status');
+            statusDiv.style.color = '#333';
+            statusDiv.innerText = 'Đang xử lý...';
+
+            const data = {
+                customerName: document.getElementById('customerName').value,
+                item: document.getElementById('item').value,
+                price: Number(document.getElementById('price').value)
+            };
+
+            try {
+                const res = await fetch(FUNCTION_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    const result = await res.json();
+                    statusDiv.style.color = 'green';
+                    statusDiv.innerText = '✅ ' + result.message;
+                } else {
+                    statusDiv.style.color = 'red';
+                    statusDiv.innerText = '❌ Tạo đơn hàng thất bại!';
+                }
+            } catch (err) {
+                statusDiv.style.color = 'red';
+                statusDiv.innerText = '❌ Lỗi kết nối tới Server!';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "azure-order-system",
+  "version": "1.0.0",
+  "description": "Serverless Order System with CosmosDB & Discord Webhook",
+  "scripts": {
+    "start": "func start"
+  },
+  "dependencies": {
+    "@azure/functions": "^4.0.0",
+    "axios": "^1.6.0"
+  }
+}
