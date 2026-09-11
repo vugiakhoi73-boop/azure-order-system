@@ -2,7 +2,7 @@
   "name": "azure-order-system",
   "version": "1.0.0",
   "description": "Serverless Order System with CosmosDB & Discord Webhook",
-  "main": "CreateOrder/index.js",
+  "main": "**/index.js",
   "scripts": {
     "start": "func start"
   },
