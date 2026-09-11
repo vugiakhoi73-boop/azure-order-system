@@ -7,15 +7,32 @@ const cosmosOutput = output.cosmosDB({
 });
 
 app.http('CreateOrder', {
-    methods: ['POST'],
+    methods: ['POST', 'OPTIONS'], // Bổ sung OPTIONS để hỗ trợ CORS preflight
     authLevel: 'anonymous',
     extraOutputs: [cosmosOutput],
     handler: async (request, context) => {
+        // Khai báo Header hỗ trợ CORS cho mọi response
+        const corsHeaders = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Content-Type': 'application/json'
+        };
+
+        // Bắt request OPTIONS từ trình duyệt
+        if (request.method === 'OPTIONS') {
+            return { status: 204, headers: corsHeaders };
+        }
+
         try {
             const body = await request.json();
 
             if (!body.customerName || !body.item || !body.price) {
-                return { status: 400, body: 'Thiếu thông tin đơn hàng!' };
+                return { 
+                    status: 400, 
+                    headers: corsHeaders,
+                    jsonBody: { error: 'Thiếu thông tin đơn hàng!' } 
+                };
             }
 
             const orderDocument = {
@@ -31,6 +48,7 @@ app.http('CreateOrder', {
 
             return {
                 status: 200,
+                headers: corsHeaders,
                 jsonBody: {
                     message: 'Đã tạo đơn hàng thành công!',
                     orderId: orderDocument.id
@@ -38,7 +56,11 @@ app.http('CreateOrder', {
             };
         } catch (error) {
             context.error('Lỗi khi xử lý đơn hàng:', error);
-            return { status: 500, body: 'Lỗi hệ thống nội bộ.' };
+            return { 
+                status: 500, 
+                headers: corsHeaders,
+                jsonBody: { error: 'Lỗi hệ thống nội bộ.' } 
+            };
         }
     }
 });
