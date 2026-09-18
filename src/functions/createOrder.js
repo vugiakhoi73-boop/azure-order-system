@@ -1,6 +1,7 @@
 const { app, output } = require('@azure/functions');
 
-const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN"; // Thay bằng URL Webhook Discord của bạn
+// Dán URL Webhook Discord của bạn tại đây
+const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1550352917939363973/055wetTpsyndZbRZ06RRLfE8pmYqVdCQW2fWxVDl9eiH7ORI5O9NSWugRFs-ZOPIHzwZ";
 
 const cosmosOutput = output.cosmosDB({
     databaseName: 'OrderDB',
@@ -37,7 +38,7 @@ app.http('CreateOrder', {
                 id: Date.now().toString(),
                 customerName: body.customerName || 'Khách hàng',
                 dish: body.dish || 'Phở Bò Tái',
-                amount: Number(body.amount) || 45000,
+                amount: Number(body.amount) || Number(body.price) || 45000,
                 status: 'Pending',
                 paymentStatus: 'Paid',
                 createdAt: new Date().toISOString()
@@ -46,29 +47,27 @@ app.http('CreateOrder', {
             // 1. Lưu vào Cosmos DB
             context.extraOutputs.set(cosmosOutput, newOrder);
 
-            // 2. Gửi thông báo sang Discord Webhook
-            if (DISCORD_WEBHOOK_URL && !DISCORD_WEBHOOK_URL.includes("YOUR_WEBHOOK_ID")) {
-                try {
-                    await fetch(DISCORD_WEBHOOK_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            embeds: [{
-                                title: "🍜 CÓ ĐƠN HÀNG MỚI!",
-                                color: 15158332, // Màu đỏ
-                                fields: [
-                                    { name: "Mã đơn", value: newOrder.id, inline: true },
-                                    { name: "Khách hàng", value: newOrder.customerName, inline: true },
-                                    { name: "Món ăn", value: newOrder.dish, inline: true },
-                                    { name: "Thành tiền", value: `${newOrder.amount.toLocaleString('vi-VN')} VNĐ`, inline: true }
-                                ],
-                                timestamp: newOrder.createdAt
-                            }]
-                        })
-                    });
-                } catch (discordErr) {
-                    context.log(`Lỗi gửi Discord Webhook: ${discordErr.message}`);
-                }
+            // 2. Gửi thông báo đến kênh Discord
+            try {
+                await fetch(DISCORD_WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        embeds: [{
+                            title: "🍜 CÓ ĐƠN HÀNG MỚI!",
+                            color: 15158332,
+                            fields: [
+                                { name: "Mã đơn", value: newOrder.id, inline: true },
+                                { name: "Khách hàng", value: newOrder.customerName, inline: true },
+                                { name: "Món ăn", value: newOrder.dish, inline: true },
+                                { name: "Thành tiền", value: `${newOrder.amount.toLocaleString('vi-VN')} VNĐ`, inline: true }
+                            ],
+                            timestamp: newOrder.createdAt
+                        }]
+                    })
+                });
+            } catch (discordErr) {
+                context.log(`Lỗi gửi Discord Webhook: ${discordErr.message}`);
             }
 
             return {
