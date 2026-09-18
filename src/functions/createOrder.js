@@ -7,11 +7,10 @@ const cosmosOutput = output.cosmosDB({
 });
 
 app.http('CreateOrder', {
-    methods: ['POST', 'OPTIONS'], // Bổ sung OPTIONS để hỗ trợ CORS preflight
+    methods: ['POST', 'OPTIONS'],
     authLevel: 'anonymous',
     extraOutputs: [cosmosOutput],
     handler: async (request, context) => {
-        // Khai báo Header hỗ trợ CORS cho mọi response
         const corsHeaders = {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -19,47 +18,44 @@ app.http('CreateOrder', {
             'Content-Type': 'application/json'
         };
 
-        // Bắt request OPTIONS từ trình duyệt
         if (request.method === 'OPTIONS') {
-            return { status: 204, headers: corsHeaders };
+            return { status: 200, headers: corsHeaders };
         }
 
         try {
-            const body = await request.json();
-
-            if (!body.customerName || !body.item || !body.price) {
-                return { 
-                    status: 400, 
-                    headers: corsHeaders,
-                    jsonBody: { error: 'Thiếu thông tin đơn hàng!' } 
-                };
+            // Đọc body dữ liệu an toàn
+            let body = {};
+            try {
+                body = await request.json();
+            } catch (e) {
+                const rawText = await request.text();
+                body = rawText ? JSON.parse(rawText) : {};
             }
 
-            const orderDocument = {
-                id: `ORD-${Date.now()}`,
-                category: "Electronics",
-                customerName: body.customerName,
-                item: body.item,
-                price: body.price,
+            const newOrder = {
+                id: Date.now().toString(),
+                customerName: body.customerName || 'Khách hàng',
+                dish: body.dish || 'Phở Bò Tái',
+                amount: Number(body.amount) || 45000,
+                status: 'Pending',
+                paymentStatus: 'Paid',
                 createdAt: new Date().toISOString()
             };
 
-            context.extraOutputs.set(cosmosOutput, orderDocument);
+            // Lưu dữ liệu vào Cosmos DB
+            context.extraOutputs.set(cosmosOutput, newOrder);
 
             return {
-                status: 200,
+                status: 201,
                 headers: corsHeaders,
-                jsonBody: {
-                    message: 'Đã tạo đơn hàng thành công!',
-                    orderId: orderDocument.id
-                }
+                body: JSON.stringify({ message: 'Tạo đơn thành công!', order: newOrder })
             };
         } catch (error) {
-            context.error('Lỗi khi xử lý đơn hàng:', error);
-            return { 
-                status: 500, 
+            context.log(`Error: ${error.message}`);
+            return {
+                status: 400,
                 headers: corsHeaders,
-                jsonBody: { error: 'Lỗi hệ thống nội bộ.' } 
+                body: JSON.stringify({ error: 'Dữ liệu gửi lên không hợp lệ', details: error.message })
             };
         }
     }

@@ -52,7 +52,6 @@
 
     <script>
         const API_BASE = "https://fn-order-vugiakhoi-btbzhyd6h6ahc7bw.southeastasia-01.azurewebsites.net/api";
-        // Cấu hình ngân hàng nhận tiền (Ví dụ: MB Bank - 970422)
         const BANK_ID = "MB"; 
         const ACCOUNT_NO = "090000000000"; // Thay bằng STK thực tế của bạn
         const ACCOUNT_NAME = "VU GIA KHOI";
@@ -72,34 +71,37 @@
             const select = document.getElementById('dishSelect');
             const customerName = document.getElementById('customerName').value;
             const dish = select.value;
-            const price = parseInt(select.options[select.selectedIndex].getAttribute('data-price'));
+            const amount = parseInt(select.options[select.selectedIndex].getAttribute('data-price'));
 
             try {
                 const res = await fetch(`${API_BASE}/CreateOrder`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ customerName, dish, price })
+                    body: JSON.stringify({ customerName, dish, amount })
                 });
 
                 const data = await res.json();
+
                 if (res.ok) {
-                    const orderId = data.orderId;
+                    // Lấy orderId linh hoạt từ data.order.id hoặc data.orderId
+                    const orderId = (data.order && data.order.id) ? data.order.id : data.orderId;
                     
-                    // Tạo URL VietQR tự động theo chuẩn VietQR API
-                    const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-compact2.png?amount=${price}&addInfo=${orderId}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
+                    const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-compact2.png?amount=${amount}&addInfo=${orderId}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
                     
                     document.getElementById('qrImage').src = qrUrl;
                     document.getElementById('displayOrderId').innerText = orderId;
                     document.getElementById('qrSection').style.display = 'block';
                     btn.innerText = "Đã tạo đơn thành công";
                 } else {
-                    alert("Lỗi tạo đơn: " + data);
+                    // Lấy thông báo lỗi cụ thể để không bị [object Object]
+                    const errMsg = data.error || data.details || JSON.stringify(data);
+                    alert("Lỗi tạo đơn: " + errMsg);
                     btn.disabled = false;
                     btn.innerText = "TẠO ĐƠN & THANH TOÁN";
                 }
             } catch (err) {
                 console.error("Lỗi:", err);
-                alert("Không thể kết nối đến server.");
+                alert("Không thể kết nối đến server: " + err.message);
                 btn.disabled = false;
                 btn.innerText = "TẠO ĐƠN & THANH TOÁN";
             }
