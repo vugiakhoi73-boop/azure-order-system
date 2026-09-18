@@ -1,13 +1,18 @@
 {
-  "name": "azure-order-system",
+  "name": "pho-order-serverless",
   "version": "1.0.0",
-  "description": "Serverless Order System with CosmosDB & Discord Webhook",
-  "main": "./*/index.js",
+  "description": "Hệ thống đặt phở Serverless trên Azure",
+  "main": "src/functions/*.js",
   "scripts": {
-    "start": "func start"
+    "start": "func start",
+    "test": "echo \"No test specified\" && exit 0"
   },
   "dependencies": {
+    "@azure/cosmos": "^4.0.0",
     "@azure/functions": "^4.0.0",
     "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "azure-functions-core-tools": "^4.0.0"
   }
 }
