@@ -34,3 +34,5 @@ jobs:
         app-name: 'fn-order-vugiakhoi'
         publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
         package: '${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+        scm-do-build-during-deployment: false
+        enable-oryx-build: false
