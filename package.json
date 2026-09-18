@@ -1,8 +1,7 @@
 {
   "name": "pho-order-serverless",
   "version": "1.0.0",
-  "description": "Hệ thống đặt phở Serverless trên Azure",
-  "main": "app.js",
+  "main": "src/functions/*.js",
   "scripts": {
     "start": "func start"
   },

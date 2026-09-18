@@ -1,6 +1,6 @@
 const { app, input } = require('@azure/functions');
 
-// Lấy dữ liệu từ Cosmos DB
+// Khai báo input binding lấy dữ liệu từ Cosmos DB
 const cosmosInput = input.cosmosDB({
     databaseName: 'OrderDB',
     containerName: 'Orders',
@@ -36,7 +36,7 @@ app.http('GetOrders', {
             return {
                 status: 500,
                 headers: corsHeaders,
-                body: JSON.stringify({ error: 'Không thể lấy danh sách đơn.' })
+                body: JSON.stringify({ error: 'Không thể lấy danh sách đơn hàng.' })
             };
         }
     }
