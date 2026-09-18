@@ -36,8 +36,8 @@
                 document.getElementById('statusIndicator').innerText = "Hệ thống hoạt động";
 
                 const container = document.getElementById('ordersContainer');
-
-                // Lọc bỏ các đơn đã bấm xong/Completed
+                
+                // Lọc bỏ các đơn đã bấm Completed
                 const pendingOrders = orders.filter(o => o.status !== 'Completed');
 
                 if (pendingOrders.length === 0) {
@@ -65,7 +65,7 @@
                                     <p class="card-text">Trạng thái: <span class="badge bg-info text-dark">${order.status || 'Pending'}</span></p>
                                 </div>
                                 <div class="card-footer border-top-0 bg-transparent">
-                                    <button onclick="markCompleted('${order.id}')" class="btn btn-success w-100 fw-bold py-2">
+                                    <button onclick="markCompleted('${order.id}', '${encodeURIComponent(order.customerName || '')}', '${encodeURIComponent(order.dish || '')}', ${order.amount || 45000}, '${order.createdAt || ''}')" class="btn btn-success w-100 fw-bold py-2">
                                         ✅ ĐÃ XONG (GIAO MÓN)
                                     </button>
                                 </div>
@@ -80,26 +80,33 @@
             }
         }
 
-        async function markCompleted(orderId) {
+        async function markCompleted(orderId, customerName, dish, amount, createdAt) {
             try {
-                // Đã sửa endpoint thành /UpdateOrder để khớp với Azure Function
+                // Xóa thẻ khỏi giao diện ngay lập tức
+                const card = document.getElementById(`card-${orderId}`);
+                if (card) card.remove();
+
                 const res = await fetch(`${API_BASE}/UpdateOrder`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ orderId: orderId, status: "Completed" })
+                    body: JSON.stringify({ 
+                        orderId: orderId, 
+                        status: "Completed",
+                        customerName: decodeURIComponent(customerName),
+                        dish: decodeURIComponent(dish),
+                        amount: amount,
+                        createdAt: createdAt
+                    })
                 });
 
-                if (res.ok) {
-                    // Xóa thẻ khỏi giao diện ngay lập tức
-                    const card = document.getElementById(`card-${orderId}`);
-                    if (card) card.remove();
-                    fetchOrders();
-                } else {
+                if (!res.ok) {
                     const errData = await res.json().catch(() => ({}));
                     alert("Cập nhật thất bại: " + (errData.error || res.statusText));
+                    fetchOrders(); // Tải lại nếu lỗi
                 }
             } catch (err) {
                 alert("Lỗi kết nối khi cập nhật đơn hàng: " + err.message);
+                fetchOrders();
             }
         }
 
