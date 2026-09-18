@@ -36,9 +36,11 @@
                 document.getElementById('statusIndicator').innerText = "Hệ thống hoạt động";
 
                 const container = document.getElementById('ordersContainer');
-                container.innerHTML = '';
 
-                if (orders.length === 0) {
+                // Lọc bỏ các đơn đã bấm xong/Completed
+                const pendingOrders = orders.filter(o => o.status !== 'Completed');
+
+                if (pendingOrders.length === 0) {
                     container.innerHTML = `
                         <div class="col-12 text-center py-5">
                             <h4 class="text-muted">Hiện chưa có đơn phở mới nào cần nấu.</h4>
@@ -46,8 +48,9 @@
                     return;
                 }
 
-                orders.forEach(order => {
-                    const timeFormatted = new Date(order.createdAt).toLocaleTimeString('vi-VN');
+                container.innerHTML = '';
+                pendingOrders.forEach(order => {
+                    const timeFormatted = new Date(order.createdAt || Date.now()).toLocaleTimeString('vi-VN');
                     container.innerHTML += `
                         <div class="col-md-4 col-lg-3" id="card-${order.id}">
                             <div class="card card-order text-white h-100">
@@ -56,10 +59,10 @@
                                     <span class="badge badge-paid">Đã TT</span>
                                 </div>
                                 <div class="card-body">
-                                    <h4 class="card-title text-warning mb-3">${order.dish}</h4>
-                                    <p class="card-text mb-1">Khách: <strong>${order.customerName}</strong></p>
+                                    <h4 class="card-title text-warning mb-3">${order.dish || 'Phở Bò Tái'}</h4>
+                                    <p class="card-text mb-1">Khách: <strong>${order.customerName || 'Khách'}</strong></p>
                                     <p class="card-text mb-2"><small class="text-muted">Mã: ${order.id}</small></p>
-                                    <p class="card-text">Trạng thái: <span class="badge bg-info text-dark">${order.status}</span></p>
+                                    <p class="card-text">Trạng thái: <span class="badge bg-info text-dark">${order.status || 'Pending'}</span></p>
                                 </div>
                                 <div class="card-footer border-top-0 bg-transparent">
                                     <button onclick="markCompleted('${order.id}')" class="btn btn-success w-100 fw-bold py-2">
@@ -79,7 +82,8 @@
 
         async function markCompleted(orderId) {
             try {
-                const res = await fetch(`${API_BASE}/UpdateOrderStatus`, {
+                // Đã sửa endpoint thành /UpdateOrder để khớp với Azure Function
+                const res = await fetch(`${API_BASE}/UpdateOrder`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ orderId: orderId, status: "Completed" })
@@ -91,10 +95,11 @@
                     if (card) card.remove();
                     fetchOrders();
                 } else {
-                    alert("Cập nhật thất bại.");
+                    const errData = await res.json().catch(() => ({}));
+                    alert("Cập nhật thất bại: " + (errData.error || res.statusText));
                 }
             } catch (err) {
-                alert("Lỗi kết nối khi cập nhật đơn hàng.");
+                alert("Lỗi kết nối khi cập nhật đơn hàng: " + err.message);
             }
         }
 
