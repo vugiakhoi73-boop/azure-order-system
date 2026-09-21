@@ -3,107 +3,312 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đặt Phở Serverless - Thanh Toán QR</title>
+    <title>Quán Phở Serverless - Đặt Hàng Nhanh Chóng</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background-color: #f8f9fa; }
-        .card-order { max-width: 500px; margin: 30px auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .qr-container { display: none; text-align: center; margin-top: 20px; }
-        .qr-img { width: 250px; height: 250px; border: 1px solid #ddd; border-radius: 8px; padding: 5px; }
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        
+        /* Header & Hero Section */
+        .hero-section {
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=1920&q=80') center/cover;
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .brand-title {
+            font-weight: 800;
+            font-size: 3rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        /* Lưới Món Ăn */
+        .food-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            height: 100%;
+        }
+
+        .food-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+        }
+
+        .food-card.active {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.2);
+        }
+
+        .food-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .price-tag {
+            color: #dc3545;
+            font-weight: 700;
+            font-size: 1.25rem;
+        }
+
+        /* Khu vực Đặt hàng (Cart) */
+        .cart-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 20px;
+        }
+
+        .form-control:focus {
+            border-color: #dc3545;
+            box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
+        }
+
+        .btn-order {
+            background-color: #dc3545;
+            border: none;
+            padding: 14px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .btn-order:hover:not(:disabled) {
+            background-color: #bb2d3b;
+            transform: scale(1.02);
+        }
+
+        /* QR Code Container */
+        .qr-container {
+            display: none;
+            text-align: center;
+            animation: fadeIn 0.5s ease-in-out;
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px dashed #198754;
+            margin-top: 20px;
+        }
+
+        .qr-img {
+            width: 100%;
+            max-width: 250px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .selected-item-display {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+            margin-bottom: 15px;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="card card-order p-4">
-            <h3 class="text-center text-danger mb-3">🍜 Quán Phở Serverless</h3>
-            
-            <form id="orderForm">
-                <div class="mb-3">
-                    <label class="form-label">Tên của bạn:</label>
-                    <input type="text" id="customerName" class="form-control" placeholder="Nhập tên..." required>
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label">Chọn món phở:</label>
-                    <select id="dishSelect" class="form-select" onchange="updatePrice()">
-                        <option value="Phở Bò Tái" data-price="45000">Phở Bò Tái - 45.000 VNĐ</option>
-                        <option value="Phở Bò Nạm" data-price="50000">Phở Bò Nạm - 50.000 VNĐ</option>
-                        <option value="Phở Đặc Biệt" data-price="65000">Phở Đặc Biệt - 65.000 VNĐ</option>
-                    </select>
-                </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Thành tiền:</label>
-                    <input type="text" id="priceDisplay" class="form-control" value="45.000 VNĐ" readonly>
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="container">
+            <h1 class="brand-title"><i class="fa-solid fa-bowl-food text-warning"></i> Quán Phở Serverless</h1>
+            <p class="fs-5 mt-2">Hương vị truyền thống - Công nghệ hiện đại - Giao hàng siêu tốc</p>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        <div class="row g-4">
+            <!-- Khu vực Menu Chọn Món -->
+            <div class="col-lg-8">
+                <h3 class="mb-4 fw-bold"><i class="fa-solid fa-utensils me-2"></i>Thực Đơn Của Quán</h3>
+                <div class="row g-3">
+                    
+                    <!-- Món 1 -->
+                    <div class="col-md-6">
+                        <div class="food-card active" onclick="selectDish('Phở Bò Tái', 45000, this)">
+                            <img src="https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=500&q=80" alt="Phở Bò Tái" class="food-img">
+                            <div class="p-3 text-center">
+                                <h5 class="fw-bold mb-1">Phở Bò Tái</h5>
+                                <p class="text-muted small mb-2">Thịt bò tươi mềm, nước dùng ngọt thanh từ xương hầm 12 tiếng.</p>
+                                <div class="price-tag">45.000 VNĐ</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Món 2 -->
+                    <div class="col-md-6">
+                        <div class="food-card" onclick="selectDish('Phở Bò Nạm', 50000, this)">
+                            <img src="https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?auto=format&fit=crop&w=500&q=80" alt="Phở Bò Nạm" class="food-img">
+                            <div class="p-3 text-center">
+                                <h5 class="fw-bold mb-1">Phở Bò Nạm</h5>
+                                <p class="text-muted small mb-2">Thịt nạm giòn sần sật, mỡ gầu béo ngậy hòa quyện gia vị quế hồi.</p>
+                                <div class="price-tag">50.000 VNĐ</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Món 3 -->
+                    <div class="col-md-6">
+                        <div class="food-card" onclick="selectDish('Phở Đặc Biệt', 65000, this)">
+                            <img src="https://images.unsplash.com/photo-1626804475297-4c605faa84eb?auto=format&fit=crop&w=500&q=80" alt="Phở Đặc Biệt" class="food-img">
+                            <div class="p-3 text-center">
+                                <h5 class="fw-bold mb-1">Phở Đặc Biệt</h5>
+                                <p class="text-muted small mb-2">Tái, nạm, gầu, gân, bò viên kèm trứng chần bổ dưỡng.</p>
+                                <div class="price-tag">65.000 VNĐ</div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
+            </div>
 
-                <button type="submit" id="btnSubmit" class="btn btn-danger w-100 fw-bold">TẠO ĐƠN & THANH TOÁN</button>
-            </form>
+            <!-- Khu vực Giỏ hàng & Thanh toán -->
+            <div class="col-lg-4">
+                <div class="cart-section">
+                    <h4 class="fw-bold mb-4"><i class="fa-solid fa-receipt me-2"></i>Thông Tin Đặt Hàng</h4>
+                    
+                    <form id="orderForm">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Họ và tên của bạn:</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="fa-solid fa-user text-muted"></i></span>
+                                <input type="text" id="customerName" class="form-control" placeholder="Nhập tên người nhận..." required>
+                            </div>
+                        </div>
 
-            <div id="qrSection" class="qr-container">
-                <hr>
-                <h5 class="text-success">Quét mã VietQR để thanh toán</h5>
-                <p class="small text-muted mb-2">Đơn hàng sẽ tự động gửi đến Bếp sau khi chuyển khoản thành công</p>
-                <img id="qrImage" src="" alt="Mã QR Thanh Toán" class="qr-img">
-                <p class="mt-2 mb-0">Mã đơn: <strong id="displayOrderId" class="text-primary"></strong></p>
+                        <div class="selected-item-display">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted">Món đang chọn:</span>
+                                <strong id="displayDishName" class="text-dark">Phở Bò Tái</strong>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Tổng tiền:</span>
+                                <strong id="displayAmount" class="text-danger fs-5">45.000 VNĐ</strong>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="btnSubmit" class="btn btn-order btn-danger w-100 fw-bold text-white shadow-sm">
+                            <i class="fa-solid fa-wallet me-2"></i>TẠO ĐƠN & THANH TOÁN
+                        </button>
+                    </form>
+
+                    <!-- Khung quét mã QR -->
+                    <div id="qrSection" class="qr-container">
+                        <h5 class="text-success fw-bold"><i class="fa-solid fa-circle-check me-2"></i>Tạo đơn thành công!</h5>
+                        <p class="small text-muted mb-3">Quét mã VietQR bên dưới để thanh toán. Bếp sẽ chuẩn bị món ngay sau khi nhận được tiền.</p>
+                        <img id="qrImage" src="" alt="Mã QR Thanh Toán" class="qr-img mb-2">
+                        <div class="bg-light p-2 rounded border">
+                            <p class="mb-0 small">Mã đơn hàng: <strong id="displayOrderId" class="text-primary"></strong></p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Cấu hình API và Ngân hàng
         const API_BASE = "https://fn-order-vugiakhoi-btbzhyd6h6ahc7bw.southeastasia-01.azurewebsites.net/api";
         const BANK_ID = "MB"; 
         const ACCOUNT_NO = "090000000000"; // Thay bằng STK thực tế của bạn
         const ACCOUNT_NAME = "VU GIA KHOI";
 
-        function updatePrice() {
-            const select = document.getElementById('dishSelect');
-            const price = select.options[select.selectedIndex].getAttribute('data-price');
-            document.getElementById('priceDisplay').value = parseInt(price).toLocaleString('vi-VN') + " VNĐ";
+        // Biến lưu trạng thái món đang chọn
+        let currentDish = "Phở Bò Tái";
+        let currentAmount = 45000;
+
+        // Hàm xử lý khi click chọn món ăn
+        function selectDish(dishName, price, element) {
+            // Xóa class active ở tất cả thẻ
+            document.querySelectorAll('.food-card').forEach(card => card.classList.remove('active'));
+            // Thêm class active cho thẻ được click
+            element.classList.add('active');
+
+            // Cập nhật biến dữ liệu
+            currentDish = dishName;
+            currentAmount = price;
+
+            // Cập nhật giao diện giỏ hàng
+            document.getElementById('displayDishName').innerText = dishName;
+            document.getElementById('displayAmount').innerText = price.toLocaleString('vi-VN') + " VNĐ";
+            
+            // Ẩn mã QR cũ nếu đang chọn món mới
+            document.getElementById('qrSection').style.display = 'none';
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fa-solid fa-wallet me-2"></i>TẠO ĐƠN & THANH TOÁN`;
         }
 
+        // Xử lý sự kiện submit form
         document.getElementById('orderForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSubmit');
-            btn.disabled = true;
-            btn.innerText = "Đang xử lý...";
-
-            const select = document.getElementById('dishSelect');
             const customerName = document.getElementById('customerName').value;
-            const dish = select.value;
-            const amount = parseInt(select.options[select.selectedIndex].getAttribute('data-price'));
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý...';
 
             try {
                 const res = await fetch(`${API_BASE}/CreateOrder`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ customerName, dish, amount })
+                    body: JSON.stringify({ 
+                        customerName: customerName, 
+                        dish: currentDish, 
+                        amount: currentAmount 
+                    })
                 });
 
                 const data = await res.json();
 
                 if (res.ok) {
-                    // Lấy orderId linh hoạt từ data.order.id hoặc data.orderId
                     const orderId = (data.order && data.order.id) ? data.order.id : data.orderId;
                     
-                    const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-compact2.png?amount=${amount}&addInfo=${orderId}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
+                    // Tạo URL QR Code
+                    const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-compact2.png?amount=${currentAmount}&addInfo=${orderId}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
                     
+                    // Hiển thị QR Code
                     document.getElementById('qrImage').src = qrUrl;
                     document.getElementById('displayOrderId').innerText = orderId;
                     document.getElementById('qrSection').style.display = 'block';
-                    btn.innerText = "Đã tạo đơn thành công";
+                    
+                    btn.innerHTML = `<i class="fa-solid fa-check me-2"></i>Chờ thanh toán...`;
                 } else {
-                    // Lấy thông báo lỗi cụ thể để không bị [object Object]
                     const errMsg = data.error || data.details || JSON.stringify(data);
                     alert("Lỗi tạo đơn: " + errMsg);
                     btn.disabled = false;
-                    btn.innerText = "TẠO ĐƠN & THANH TOÁN";
+                    btn.innerHTML = `<i class="fa-solid fa-wallet me-2"></i>TẠO ĐƠN & THANH TOÁN`;
                 }
             } catch (err) {
                 console.error("Lỗi:", err);
                 alert("Không thể kết nối đến server: " + err.message);
                 btn.disabled = false;
-                btn.innerText = "TẠO ĐƠN & THANH TOÁN";
+                btn.innerHTML = `<i class="fa-solid fa-wallet me-2"></i>TẠO ĐƠN & THANH TOÁN`;
             }
         });
     </script>
