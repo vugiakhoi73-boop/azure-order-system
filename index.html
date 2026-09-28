@@ -203,7 +203,7 @@
             padding: 10px 15px;
             border-radius: 15px;
             font-size: 0.95rem;
-            white-space: pre-line; /* Để hiển thị ký tự xuống dòng \n */
+            white-space: pre-line;
         }
 
         .msg-bot {
@@ -379,7 +379,7 @@
         let currentAmount = 45000;
 
         // Biến lưu TRẠNG THÁI CUỘC TRÒ CHUYỆN CỦA AI
-        let aiState = "IDLE"; // IDLE: Bình thường, WAITING_FOR_NAME: Đang chờ khách nhập tên
+        let aiState = "IDLE";
         let aiPendingDish = "";
         let aiPendingPrice = 0;
 
@@ -461,26 +461,21 @@
             const userText = inputField.value.trim();
             if (!userText) return;
 
-            // 1. In tin nhắn của người dùng lên màn hình (Lưu lịch sử)
             appendMessage('user', userText);
             inputField.value = '';
 
             const typingId = appendMessage('bot', 'Đang xử lý...');
 
-            // 2. Chờ AI phản hồi
             const aiResponse = await simulateAIProcess(userText);
             
-            // Xóa chữ "Đang xử lý..." và thay bằng tin thật của AI
             document.getElementById(typingId).remove();
             appendMessage('bot', aiResponse.message);
 
-            // 3. Nếu AI chốt đơn xong -> Gọi API
             if (aiResponse.action === 'order') {
                 placeOrderFromAI(aiResponse.dish, aiResponse.price, aiResponse.customerName);
             }
         }
 
-        // Hàm in tin nhắn mới nối tiếp tin nhắn cũ
         function appendMessage(sender, text) {
             const msgDiv = document.createElement('div');
             msgDiv.className = `message msg-${sender}`;
@@ -489,11 +484,10 @@
             
             const chatMessages = document.getElementById('chatMessages');
             chatMessages.appendChild(msgDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight; // Luôn cuộn xuống tin mới nhất
+            chatMessages.scrollTop = chatMessages.scrollHeight; 
             return msgDiv.id;
         }
 
-        // Bộ não AI giả lập có State (Bộ nhớ)
         async function simulateAIProcess(text) {
             return new Promise(resolve => {
                 setTimeout(() => {
@@ -501,8 +495,8 @@
                     
                     // TRẠNG THÁI 1: Nếu AI đang đợi khách nhập tên
                     if (aiState === "WAITING_FOR_NAME") {
-                        const customerName = text; // Lấy toàn bộ câu trả lời làm tên
-                        aiState = "IDLE"; // Đặt lại trạng thái bình thường
+                        const customerName = text; 
+                        aiState = "IDLE"; 
                         
                         resolve({
                             action: 'order',
@@ -514,7 +508,7 @@
                         return;
                     }
 
-                    // TRẠNG THÁI 2: Xử lý các câu hỏi bình thường (IDLE)
+                    // TRẠNG THÁI 2: Xử lý các câu hỏi bình thường
                     if (lowerText.includes("có gì") || lowerText.includes("thực đơn") || lowerText.includes("menu") || lowerText.includes("món gì")) {
                         resolve({
                             action: 'chat',
@@ -527,7 +521,8 @@
                         let dish = "Phở Bò Tái";
                         let price = 45000;
                         
-                        if (lowerText.includes("đặc biệt")) {
+                        // Cập nhật để hỗ trợ lỗi chính tả "đặt biệt" hoặc viết tắt "đb"
+                        if (lowerText.includes("đặc biệt") || lowerText.includes("đặt biệt") || lowerText.includes("đb")) {
                             dish = "Phở Đặc Biệt";
                             price = 65000;
                         } else if (lowerText.includes("nạm")) {
@@ -535,7 +530,6 @@
                             price = 50000;
                         }
                         
-                        // Lưu món ăn vào bộ nhớ tạm và chuyển trạng thái sang hỏi tên
                         aiPendingDish = dish;
                         aiPendingPrice = price;
                         aiState = "WAITING_FOR_NAME";
@@ -547,7 +541,6 @@
                         return;
                     } 
                     
-                    // Câu trả lời mặc định nếu không hiểu
                     resolve({
                         action: 'chat',
                         message: "Dạ em là AI của quán. Anh/chị muốn gọi Phở Tái, Nạm hay Phở Đặc Biệt ạ?"
@@ -556,15 +549,12 @@
             });
         }
 
-        // Logic gọi API CreateOrder sau khi AI đã chốt xong Tên + Món
         async function placeOrderFromAI(dish, price, customerName) {
             try {
-                // Tự động chuyển UI trên web
                 const targetCard = Array.from(document.querySelectorAll('.food-card')).find(el => el.innerText.includes(dish));
                 selectDish(dish, price, targetCard);
                 document.getElementById('customerName').value = customerName;
 
-                // Gọi API backend CreateOrder
                 const res = await fetch(`${API_BASE}/CreateOrder`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
