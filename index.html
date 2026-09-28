@@ -129,6 +129,118 @@
             border-left: 4px solid #dc3545;
             margin-bottom: 15px;
         }
+
+        /* Chatbot Widget */
+        .chat-widget {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+        }
+
+        .chat-btn {
+            background-color: #198754;
+            color: white;
+            border: none;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: transform 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .chat-window {
+            display: none;
+            position: absolute;
+            bottom: 80px;
+            right: 0;
+            width: 350px;
+            height: 450px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: #198754;
+            color: white;
+            padding: 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header .close-btn {
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            font-size: 0.95rem;
+        }
+
+        .msg-bot {
+            background: #e9ecef;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        .msg-user {
+            background: #198754;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 10px;
+            border-top: 1px solid #dee2e6;
+            background: white;
+        }
+
+        .chat-input input {
+            flex: 1;
+            border: 1px solid #ced4da;
+            border-radius: 20px;
+            padding: 8px 15px;
+            outline: none;
+        }
+
+        .chat-input button {
+            background: none;
+            border: none;
+            color: #198754;
+            font-size: 20px;
+            padding: 0 10px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -163,7 +275,6 @@
                     <!-- Món 2 -->
                     <div class="col-md-6">
                         <div class="food-card" onclick="selectDish('Phở Bò Nạm', 50000, this)">
-                            <!-- Tên file đã khớp với pho nam.jpg trong máy của bạn -->
                             <img src="pho nam.jpg" alt="Phở Bò Nạm" class="food-img">
                             <div class="p-3 text-center">
                                 <h5 class="fw-bold mb-1">Phở Bò Nạm</h5>
@@ -176,7 +287,6 @@
                     <!-- Món 3 -->
                     <div class="col-md-6">
                         <div class="food-card" onclick="selectDish('Phở Đặc Biệt', 65000, this)">
-                            <!-- Tên file đã khớp với pho-db.jpg trong máy của bạn -->
                             <img src="pho-db.jpg" alt="Phở Đặc Biệt" class="food-img">
                             <div class="p-3 text-center">
                                 <h5 class="fw-bold mb-1">Phở Đặc Biệt</h5>
@@ -233,6 +343,28 @@
         </div>
     </div>
 
+    <!-- Chatbot Widget -->
+    <div class="chat-widget">
+        <!-- Cửa sổ chat -->
+        <div class="chat-window" id="chatWindow">
+            <div class="chat-header">
+                <span><i class="fa-solid fa-robot me-2"></i> Phở AI Assistant</span>
+                <span class="close-btn" onclick="toggleChat()">&times;</span>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message msg-bot">Xin chào! Tôi là trợ lý AI của quán. Bạn muốn đặt phở gì hôm nay? (Ví dụ: Đặt 1 phở đặc biệt tên Khôi)</div>
+            </div>
+            <div class="chat-input">
+                <input type="text" id="aiInput" placeholder="Nhập tin nhắn..." onkeypress="handleAIKeyPress(event)">
+                <button onclick="sendAIMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
+        </div>
+        <!-- Nút bong bóng chat -->
+        <button class="chat-btn" onclick="toggleChat()">
+            <i class="fa-solid fa-message"></i>
+        </button>
+    </div>
+
     <script>
         // Cấu hình API và Ngân hàng
         const API_BASE = "https://fn-order-vugiakhoi-btbzhyd6h6ahc7bw.southeastasia-01.azurewebsites.net/api";
@@ -246,27 +378,22 @@
 
         // Hàm xử lý khi click chọn món ăn
         function selectDish(dishName, price, element) {
-            // Xóa class active ở tất cả thẻ
             document.querySelectorAll('.food-card').forEach(card => card.classList.remove('active'));
-            // Thêm class active cho thẻ được click
-            element.classList.add('active');
+            if(element) element.classList.add('active');
 
-            // Cập nhật biến dữ liệu
             currentDish = dishName;
             currentAmount = price;
 
-            // Cập nhật giao diện giỏ hàng
             document.getElementById('displayDishName').innerText = dishName;
             document.getElementById('displayAmount').innerText = price.toLocaleString('vi-VN') + " VNĐ";
             
-            // Ẩn mã QR cũ nếu đang chọn món mới
             document.getElementById('qrSection').style.display = 'none';
             const btn = document.getElementById('btnSubmit');
             btn.disabled = false;
             btn.innerHTML = `<i class="fa-solid fa-wallet me-2"></i>TẠO ĐƠN & THANH TOÁN`;
         }
 
-        // Xử lý sự kiện submit form
+        // Xử lý sự kiện submit form truyền thống
         document.getElementById('orderForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSubmit');
@@ -290,11 +417,8 @@
 
                 if (res.ok) {
                     const orderId = (data.order && data.order.id) ? data.order.id : data.orderId;
-                    
-                    // Tạo URL QR Code
                     const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-compact2.png?amount=${currentAmount}&addInfo=${orderId}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
                     
-                    // Hiển thị QR Code
                     document.getElementById('qrImage').src = qrUrl;
                     document.getElementById('displayOrderId').innerText = orderId;
                     document.getElementById('qrSection').style.display = 'block';
@@ -313,6 +437,123 @@
                 btn.innerHTML = `<i class="fa-solid fa-wallet me-2"></i>TẠO ĐƠN & THANH TOÁN`;
             }
         });
+
+        // --- LOGIC CHO AI CHATBOT ---
+
+        function toggleChat() {
+            const chatWindow = document.getElementById('chatWindow');
+            chatWindow.style.display = chatWindow.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function handleAIKeyPress(e) {
+            if (e.key === 'Enter') sendAIMessage();
+        }
+
+        async function sendAIMessage() {
+            const inputField = document.getElementById('aiInput');
+            const userText = inputField.value.trim();
+            if (!userText) return;
+
+            appendMessage('user', userText);
+            inputField.value = '';
+
+            const typingId = appendMessage('bot', 'Đang xử lý...');
+
+            // Gửi dữ liệu giả lập AI
+            const aiResponse = await simulateAIProcess(userText);
+            
+            document.getElementById(typingId).remove();
+            appendMessage('bot', aiResponse.message);
+
+            if (aiResponse.action === 'order') {
+                placeOrderFromAI(aiResponse.dish, aiResponse.price, aiResponse.customerName);
+            }
+        }
+
+        function appendMessage(sender, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message msg-${sender}`;
+            msgDiv.innerText = text;
+            msgDiv.id = 'msg-' + Date.now();
+            
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight; 
+            return msgDiv.id;
+        }
+
+        async function simulateAIProcess(text) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    const lowerText = text.toLowerCase();
+                    if (lowerText.includes("đặt") || lowerText.includes("cho 1") || lowerText.includes("lấy 1") || lowerText.includes("mua")) {
+                        let dish = "Phở Bò Tái";
+                        let price = 45000;
+                        
+                        if (lowerText.includes("đặc biệt")) {
+                            dish = "Phở Đặc Biệt";
+                            price = 65000;
+                        } else if (lowerText.includes("nạm")) {
+                            dish = "Phở Bò Nạm";
+                            price = 50000;
+                        }
+                        
+                        const nameMatch = text.match(/tên\s+([A-ZÀ-Ỹa-zà-ỹ\s]+)/i);
+                        const customerName = nameMatch ? nameMatch[1].trim() : "Khách qua AI";
+
+                        resolve({
+                            action: 'order',
+                            dish: dish,
+                            price: price,
+                            customerName: customerName,
+                            message: `Dạ vâng, em đã lên đơn ${dish} cho khách hàng tên ${customerName}. Anh/chị xem mã QR ở màn hình chính bên cạnh để thanh toán nhé!`
+                        });
+                    } else {
+                        resolve({
+                            action: 'chat',
+                            message: "Dạ em là AI của quán. Anh/chị muốn gọi Phở Tái, Nạm hay Đặc Biệt ạ? Cứ nhắn em ví dụ: 'Cho 1 phở đặc biệt tên Khôi'."
+                        });
+                    }
+                }, 1000);
+            });
+        }
+
+        async function placeOrderFromAI(dish, price, customerName) {
+            try {
+                // Tự động chuyển UI
+                const targetCard = Array.from(document.querySelectorAll('.food-card')).find(el => el.innerText.includes(dish));
+                selectDish(dish, price, targetCard);
+                document.getElementById('customerName').value = customerName;
+
+                // Gọi API backend CreateOrder
+                const res = await fetch(`${API_BASE}/CreateOrder`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        customerName: customerName, 
+                        dish: dish, 
+                        amount: price 
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    const orderId = (data.order && data.order.id) ? data.order.id : data.orderId;
+                    const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-compact2.png?amount=${price}&addInfo=${orderId}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
+                    
+                    document.getElementById('qrImage').src = qrUrl;
+                    document.getElementById('displayOrderId').innerText = orderId;
+                    document.getElementById('qrSection').style.display = 'block';
+                    
+                    const btn = document.getElementById('btnSubmit');
+                    btn.innerHTML = `<i class="fa-solid fa-check me-2"></i>Chờ thanh toán...`;
+                    btn.disabled = true;
+                }
+            } catch (err) {
+                appendMessage('bot', 'Xin lỗi, hệ thống tạo đơn đang gặp sự cố. Vui lòng thử lại sau!');
+            }
+        }
     </script>
 </body>
 </html>
