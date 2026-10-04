@@ -1,6 +1,6 @@
 const { app } = require('@azure/functions');
 
-// Chèn link Discord Webhook trực tiếp vào đây
+// Chèn link Discord Webhook trực tiếp
 const webhookUrl = "https://discord.com/api/webhooks/1550352917939363973/055wetTpsyndZbRZ06RRLfE8pmYqVdCQW2fWxVDl9eiH7ORI5O9NSWugRFs-ZOPIHzwZ";
 
 app.cosmosDB('ProcessAlert', {
@@ -16,12 +16,24 @@ app.cosmosDB('ProcessAlert', {
                     const phone = order.customerPhone ? order.customerPhone : 'Không có';
                     const address = order.customerAddress ? order.customerAddress : 'Không có';
 
+                    // Chuyển sang định dạng Embed có khung của Discord
                     const discordMessage = {
-                        content: `🍜 **CÓ ĐƠN HÀNG MỚI!**\n\n**Mã đơn**\n${order.id}\n**Khách hàng**\n${order.customerName}\n**Số điện thoại**\n${phone}\n**Địa chỉ**\n${address}\n**Món ăn**\n${order.dish}\n**Thành tiền**\n${order.amount} VNĐ`
+                        embeds: [{
+                            title: "🍜 CÓ ĐƠN HÀNG MỚI!",
+                            color: 15105570, // Màu cam nhạt báo hiệu đơn mới
+                            fields: [
+                                { name: "Mã đơn", value: order.id, inline: true },
+                                { name: "Khách hàng", value: order.customerName, inline: true },
+                                { name: "Số điện thoại", value: phone, inline: true },
+                                { name: "Địa chỉ", value: address, inline: false },
+                                { name: "Món ăn", value: order.dish, inline: true },
+                                { name: "Thành tiền", value: `${order.amount} VNĐ`, inline: true }
+                            ],
+                            timestamp: order.createdAt || new Date().toISOString()
+                        }]
                     };
 
                     try {
-                        // Dùng hàm fetch mặc định của Node 18 để gửi request
                         await fetch(webhookUrl, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
