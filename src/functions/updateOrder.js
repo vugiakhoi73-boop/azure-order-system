@@ -1,5 +1,6 @@
 const { app, output } = require('@azure/functions');
 
+// Lưu ý: Đưa link Discord vào biến môi trường trên Azure sẽ an toàn hơn là để lộ trong code
 const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1550352917939363973/055wetTpsyndZbRZ06RRLfE8pmYqVdCQW2fWxVDl9eiH7ORI5O9NSWugRFs-ZOPIHzwZ";
 
 const cosmosOutput = output.cosmosDB({
@@ -20,44 +21,36 @@ app.http('UpdateOrder', {
             'Content-Type': 'application/json'
         };
 
-        if (request.method === 'OPTIONS') {
-            return { status: 200, headers: corsHeaders };
-        }
+        if (request.method === 'OPTIONS') return { status: 200, headers: corsHeaders };
 
         try {
-            let body = {};
-            try {
-                body = await request.json();
-            } catch (e) {
-                const rawText = await request.text();
-                body = rawText ? JSON.parse(rawText) : {};
-            }
-
-            const { orderId, status, customerName, dish, amount, createdAt } = body;
+            const body = await request.json();
+            
+            // Lấy ID chuẩn xác từ giao diện
+            const orderId = body.id || body.orderId; 
 
             if (!orderId) {
-                return {
-                    status: 400,
-                    headers: corsHeaders,
-                    body: JSON.stringify({ error: 'Thiếu orderId' })
-                };
+                return { status: 400, headers: corsHeaders, body: JSON.stringify({ error: 'Thiếu mã đơn hàng' }) };
             }
 
+            // Lắp ráp lại toàn bộ dữ liệu để tránh Cosmos DB ghi đè mất thông tin cũ
             const updatedOrder = {
                 id: orderId,
-                customerName: customerName || 'Khách hàng',
-                dish: dish || 'Phở Bò Tái',
-                amount: amount || 45000,
-                status: status || 'Completed',
+                customerName: body.customerName || 'Khách hàng',
+                customerPhone: body.customerPhone || 'Không có',
+                customerAddress: body.customerAddress || 'Không có',
+                dish: body.dish || 'Phở Bò Tái',
+                amount: body.amount || 45000,
+                status: 'Completed',
                 paymentStatus: 'Paid',
-                createdAt: createdAt || new Date().toISOString(),
+                createdAt: body.createdAt || new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
 
-            // 1. Lưu trạng thái Completed vào Cosmos DB
+            // 1. Lưu trạng thái vào Cosmos DB
             context.extraOutputs.set(cosmosOutput, updatedOrder);
 
-            // 2. Gửi thông báo Hoàn Thành về Discord
+            // 2. Bắn thông báo hoàn thành qua Discord
             try {
                 await fetch(DISCORD_WEBHOOK_URL, {
                     method: 'POST',
@@ -65,7 +58,7 @@ app.http('UpdateOrder', {
                     body: JSON.stringify({
                         embeds: [{
                             title: "✅ MÓN ĂN ĐÃ HOÀN THÀNH & GIAO MÓN!",
-                            color: 5763719, // Màu xanh lá
+                            color: 5763719,
                             fields: [
                                 { name: "Mã đơn", value: updatedOrder.id, inline: true },
                                 { name: "Khách hàng", value: updatedOrder.customerName, inline: true },
@@ -77,20 +70,12 @@ app.http('UpdateOrder', {
                     })
                 });
             } catch (discordErr) {
-                context.log(`Lỗi gửi Discord Webhook: ${discordErr.message}`);
+                context.log(`Lỗi Discord: ${discordErr.message}`);
             }
 
-            return {
-                status: 200,
-                headers: corsHeaders,
-                body: JSON.stringify({ message: 'Cập nhật thành công', order: updatedOrder })
-            };
+            return { status: 200, headers: corsHeaders, body: JSON.stringify({ message: 'Cập nhật thành công', order: updatedOrder }) };
         } catch (error) {
-            return {
-                status: 500,
-                headers: corsHeaders,
-                body: JSON.stringify({ error: error.message })
-            };
+            return { status: 500, headers: corsHeaders, body: JSON.stringify({ error: error.message }) };
         }
     }
 });
