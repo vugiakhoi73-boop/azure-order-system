@@ -1,51 +1,74 @@
-module.exports = async function (context, req) {
-    try {
-        // Lấy dữ liệu từ Frontend gửi lên, bao gồm cả SĐT và Địa chỉ mới
-        const { customerName, customerPhone, customerAddress, dish, amount } = req.body;
+const { app, output } = require('@azure/functions');
 
-        if (!customerName || !dish || !amount) {
-            context.res = {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' },
-                body: { error: "Thiếu thông tin bắt buộc (Tên, Món, Giá tiền)." }
-            };
-            return;
+// Khai báo output binding để ghi vào Cosmos DB
+const cosmosOutput = output.cosmosDB({
+    databaseName: 'OrderDB',
+    containerName: 'Orders',
+    connection: 'CosmosDBConnectionString',
+    createIfNotExists: true
+});
+
+app.http('CreateOrder', {
+    methods: ['POST', 'OPTIONS'],
+    authLevel: 'anonymous',
+    extraOutputs: [cosmosOutput],
+    handler: async (request, context) => {
+        const corsHeaders = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Content-Type': 'application/json'
+        };
+
+        // Xử lý Preflight request từ trình duyệt (CORS)
+        if (request.method === 'OPTIONS') {
+            return { status: 200, headers: corsHeaders };
         }
 
-        // Tạo ID đơn hàng ngẫu nhiên dựa trên thời gian
-        const orderId = Date.now().toString(); 
+        try {
+            // Lấy dữ liệu JSON từ Frontend
+            const reqBody = await request.json();
+            const { customerName, customerPhone, customerAddress, dish, amount } = reqBody;
 
-        // Đóng gói đối tượng đơn hàng mới
-        const newOrder = {
-            id: orderId,
-            customerName: customerName,
-            customerPhone: customerPhone || "Không có",    // Thêm dòng này
-            customerAddress: customerAddress || "Không có", // Thêm dòng này
-            dish: dish,
-            amount: amount,
-            status: "Pending", // Trạng thái chờ bếp xử lý
-            createdAt: new Date().toISOString()
-        };
-
-        // Ghi vào Cosmos DB qua Output Binding (đảm bảo tên binding trong function.json là outputDocument)
-        context.bindings.outputDocument = newOrder;
-
-        // Trả kết quả thành công về cho Frontend (Dữ liệu JSON hợp lệ)
-        context.res = {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-            body: { 
-                message: "Tạo đơn hàng thành công", 
-                order: newOrder 
+            if (!customerName || !dish || !amount) {
+                return {
+                    status: 400,
+                    headers: corsHeaders,
+                    body: JSON.stringify({ error: "Thiếu thông tin bắt buộc (Tên, Món, Giá tiền)." })
+                };
             }
-        };
 
-    } catch (error) {
-        context.log.error("Lỗi khi tạo đơn hàng:", error);
-        context.res = {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-            body: { error: "Lỗi máy chủ nội bộ: " + error.message }
-        };
+            // Tạo đối tượng đơn hàng
+            const orderId = Date.now().toString(); 
+            const newOrder = {
+                id: orderId,
+                customerName: customerName,
+                customerPhone: customerPhone || "Không có",
+                customerAddress: customerAddress || "Không có",
+                dish: dish,
+                amount: amount,
+                status: "Pending",
+                createdAt: new Date().toISOString()
+            };
+
+            // Ghi dữ liệu vào Cosmos DB
+            context.extraOutputs.set(cosmosOutput, newOrder);
+
+            return {
+                status: 200,
+                headers: corsHeaders,
+                body: JSON.stringify({ 
+                    message: "Tạo đơn hàng thành công", 
+                    order: newOrder 
+                })
+            };
+        } catch (error) {
+            context.log(`Lỗi khi tạo đơn hàng: ${error.message}`);
+            return {
+                status: 500,
+                headers: corsHeaders,
+                body: JSON.stringify({ error: "Lỗi máy chủ nội bộ: " + error.message })
+            };
+        }
     }
-};
+});
