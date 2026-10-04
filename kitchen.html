@@ -69,6 +69,9 @@
         // Đường dẫn API Azure Function của bạn
         const API_BASE = "https://fn-order-vugiakhoi-btbzhyd6h6ahc7bw.southeastasia-01.azurewebsites.net/api";
         
+        // Khai báo biến toàn cục để lưu trữ toàn bộ dữ liệu đơn hàng
+        let currentPendingOrders = [];
+        
         // Hàm gọi API lấy danh sách đơn hàng
         async function fetchOrders() {
             try {
@@ -86,10 +89,10 @@
         function renderOrders(orders) {
             const container = document.getElementById('ordersContainer');
             
-            // Lọc chỉ lấy các đơn đang ở trạng thái Pending
-            const pendingOrders = orders.filter(o => o.status === 'Pending');
+            // Lọc và lưu toàn bộ dữ liệu vào biến toàn cục
+            currentPendingOrders = orders.filter(o => o.status === 'Pending');
 
-            if (pendingOrders.length === 0) {
+            if (currentPendingOrders.length === 0) {
                 container.innerHTML = '<div class="col-12 text-center text-muted mt-5"><h4>Chưa có đơn hàng nào cần chế biến.</h4></div>';
                 return;
             }
@@ -97,7 +100,7 @@
             container.innerHTML = ''; // Xóa thông báo loading
 
             // Duyệt qua từng đơn hàng và tạo thẻ HTML
-            pendingOrders.forEach(order => {
+            currentPendingOrders.forEach(order => {
                 const col = document.createElement('div');
                 col.className = 'col-md-4 col-lg-3';
                 
@@ -135,11 +138,18 @@
 
         // Hàm cập nhật trạng thái đơn hàng khi làm xong
         async function completeOrder(orderId) {
+            // Lấy nguyên 1 cục dữ liệu của đơn hàng dựa trên ID
+            const orderData = currentPendingOrders.find(o => o.id === orderId || o.orderId === orderId);
+            if (!orderData) return;
+            
+            // Đổi trạng thái thành Completed
+            orderData.status = 'Completed'; 
+
             try {
                 const response = await fetch(`${API_BASE}/UpdateOrder`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: orderId, status: 'Completed' })
+                    body: JSON.stringify(orderData) // Gửi đi TOÀN BỘ dữ liệu để không bị mất thông tin
                 });
                 
                 if (response.ok) {
