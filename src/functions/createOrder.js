@@ -1,86 +1,51 @@
-const { app, output } = require('@azure/functions');
+module.exports = async function (context, req) {
+    try {
+        // Lấy dữ liệu từ Frontend gửi lên, bao gồm cả SĐT và Địa chỉ mới
+        const { customerName, customerPhone, customerAddress, dish, amount } = req.body;
 
-// Dán URL Webhook Discord của bạn tại đây
-const DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1550352917939363973/055wetTpsyndZbRZ06RRLfE8pmYqVdCQW2fWxVDl9eiH7ORI5O9NSWugRFs-ZOPIHzwZ";
+        if (!customerName || !dish || !amount) {
+            context.res = {
+                status: 400,
+                headers: { 'Content-Type': 'application/json' },
+                body: { error: "Thiếu thông tin bắt buộc (Tên, Món, Giá tiền)." }
+            };
+            return;
+        }
 
-const cosmosOutput = output.cosmosDB({
-    databaseName: 'OrderDB',
-    containerName: 'Orders',
-    connection: 'CosmosDBConnectionString'
-});
+        // Tạo ID đơn hàng ngẫu nhiên dựa trên thời gian
+        const orderId = Date.now().toString(); 
 
-app.http('CreateOrder', {
-    methods: ['POST', 'OPTIONS'],
-    authLevel: 'anonymous',
-    extraOutputs: [cosmosOutput],
-    handler: async (request, context) => {
-        const corsHeaders = {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-            'Content-Type': 'application/json'
+        // Đóng gói đối tượng đơn hàng mới
+        const newOrder = {
+            id: orderId,
+            customerName: customerName,
+            customerPhone: customerPhone || "Không có",    // Thêm dòng này
+            customerAddress: customerAddress || "Không có", // Thêm dòng này
+            dish: dish,
+            amount: amount,
+            status: "Pending", // Trạng thái chờ bếp xử lý
+            createdAt: new Date().toISOString()
         };
 
-        if (request.method === 'OPTIONS') {
-            return { status: 200, headers: corsHeaders };
-        }
+        // Ghi vào Cosmos DB qua Output Binding (đảm bảo tên binding trong function.json là outputDocument)
+        context.bindings.outputDocument = newOrder;
 
-        try {
-            let body = {};
-            try {
-                body = await request.json();
-            } catch (e) {
-                const rawText = await request.text();
-                body = rawText ? JSON.parse(rawText) : {};
+        // Trả kết quả thành công về cho Frontend (Dữ liệu JSON hợp lệ)
+        context.res = {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+            body: { 
+                message: "Tạo đơn hàng thành công", 
+                order: newOrder 
             }
+        };
 
-            const newOrder = {
-                id: Date.now().toString(),
-                customerName: body.customerName || 'Khách hàng',
-                dish: body.dish || 'Phở Bò Tái',
-                amount: Number(body.amount) || Number(body.price) || 45000,
-                status: 'Pending',
-                paymentStatus: 'Paid',
-                createdAt: new Date().toISOString()
-            };
-
-            // 1. Lưu vào Cosmos DB
-            context.extraOutputs.set(cosmosOutput, newOrder);
-
-            // 2. Gửi thông báo đến kênh Discord
-            try {
-                await fetch(DISCORD_WEBHOOK_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        embeds: [{
-                            title: "🍜 CÓ ĐƠN HÀNG MỚI!",
-                            color: 15158332,
-                            fields: [
-                                { name: "Mã đơn", value: newOrder.id, inline: true },
-                                { name: "Khách hàng", value: newOrder.customerName, inline: true },
-                                { name: "Món ăn", value: newOrder.dish, inline: true },
-                                { name: "Thành tiền", value: `${newOrder.amount.toLocaleString('vi-VN')} VNĐ`, inline: true }
-                            ],
-                            timestamp: newOrder.createdAt
-                        }]
-                    })
-                });
-            } catch (discordErr) {
-                context.log(`Lỗi gửi Discord Webhook: ${discordErr.message}`);
-            }
-
-            return {
-                status: 201,
-                headers: corsHeaders,
-                body: JSON.stringify({ message: 'Tạo đơn thành công!', order: newOrder })
-            };
-        } catch (error) {
-            return {
-                status: 400,
-                headers: corsHeaders,
-                body: JSON.stringify({ error: error.message })
-            };
-        }
+    } catch (error) {
+        context.log.error("Lỗi khi tạo đơn hàng:", error);
+        context.res = {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' },
+            body: { error: "Lỗi máy chủ nội bộ: " + error.message }
+        };
     }
-});
+};
