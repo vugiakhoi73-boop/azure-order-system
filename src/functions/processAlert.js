@@ -1,45 +1,43 @@
-const { app } = require('@azure/functions');
-const axios = require('axios');
+const fetch = require('node-fetch'); // Hoặc axios tùy bạn dùng
 
-app.cosmosDB('ProcessAlert', {
-    databaseName: 'OrderDB',
-    containerName: 'Orders',
-    connection: 'CosmosDBConnectionString',
-    createLeaseContainerIfNotExists: true,
-    handler: async (documents, context) => {
-        const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+module.exports = async function (context, documents) {
+    if (!!documents && documents.length > 0) {
+        for (let order of documents) {
+            
+            // Chỉ thông báo khi có đơn hàng mới (trạng thái Pending)
+            if (order.status === 'Pending') {
+                
+                // ==========================================
+                // TỪ ĐÂY: XÓA ĐOẠN CODE TẠO discordMessage CŨ
+                // VÀ DÁN ĐOẠN NÀY VÀO
+                // ==========================================
+                
+                const phone = order.customerPhone ? order.customerPhone : 'Không có';
+                const address = order.customerAddress ? order.customerAddress : 'Không có';
 
-        if (!webhookUrl) {
-            context.error('Thiếu cấu hình DISCORD_WEBHOOK_URL!');
-            return;
-        }
+                const discordMessage = {
+                    content: `🍜 **CÓ ĐƠN HÀNG MỚI!**\n\n**Mã đơn**\n${order.id}\n**Khách hàng**\n${order.customerName}\n**Số điện thoại**\n${phone}\n**Địa chỉ**\n${address}\n**Món ăn**\n${order.dish}\n**Thành tiền**\n${order.amount} VNĐ`
+                };
+                
+                // ==========================================
+                // KẾT THÚC ĐOẠN DÁN
+                // ==========================================
 
-        for (const doc of documents) {
-            const payload = {
-                username: "Azure Order System",
-                avatar_url: "https://portal.azure.com/favicon.ico",
-                embeds: [
-                    {
-                        title: "🛒 CÓ ĐƠN HÀNG MỚI!",
-                        color: 5814783,
-                        fields: [
-                            { name: "Mã đơn hàng", value: doc.id, inline: true },
-                            { name: "Khách hàng", value: doc.customerName, inline: true },
-                            { name: "Sản phẩm", value: doc.item, inline: true },
-                            { name: "Giá tiền", value: `${doc.price.toLocaleString('vi-VN')} VNĐ`, inline: true },
-                            { name: "Thời gian", value: doc.createdAt, inline: false }
-                        ],
-                        footer: { text: "Serverless Event-Driven via Cosmos DB Change Feed" }
-                    }
-                ]
-            };
+                // Lấy URL Webhook từ biến môi trường (hoặc dán cứng URL vào đây)
+                const webhookUrl = process.env.DISCORD_WEBHOOK_URL; 
 
-            try {
-                await axios.post(webhookUrl, payload);
-                context.log(`Đã gửi thông báo Discord cho đơn hàng: ${doc.id}`);
-            } catch (err) {
-                context.error(`Lỗi gửi Webhook Discord (${doc.id}):`, err.message);
+                // Gửi HTTP POST request tới Discord
+                try {
+                    await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(discordMessage)
+                    });
+                    context.log(`Đã gửi thông báo Discord cho đơn ${order.id}`);
+                } catch (err) {
+                    context.log.error("Lỗi gửi Discord Webhook:", err);
+                }
             }
         }
     }
-});
+}

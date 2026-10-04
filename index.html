@@ -3,659 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quán Phở Serverless - Đặt Hàng Nhanh Chóng</title>
-    
-    <!-- Cấu hình PWA App Mobile -->
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#198754">
-    <link rel="apple-touch-icon" href="icon.png">
-    
-    <!-- Đăng ký Service Worker -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Đã đăng ký PWA thành công'))
-                    .catch(err => console.error('Lỗi đăng ký PWA:', err));
-            });
-        }
-    </script>
-
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>Bếp - Quản Lý Chế Biến Phở</title>
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            font-family: 'Nunito', sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
-        }
-        
-        /* Header & Hero Section */
-        .hero-section {
-            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=1920&q=80') center/cover;
-            color: white;
-            padding: 80px 0;
-            text-align: center;
-            border-bottom-left-radius: 30px;
-            border-bottom-right-radius: 30px;
-            margin-bottom: 40px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-
-        .brand-title {
-            font-weight: 800;
-            font-size: 3rem;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
-
-        /* Lưới Món Ăn */
-        .food-card {
-            background: white;
-            border-radius: 16px;
-            overflow: hidden;
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            height: 100%;
-        }
-
-        .food-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.15);
-        }
-
-        .food-card.active {
-            border-color: #dc3545;
-            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.2);
-        }
-
-        .food-img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-        }
-
-        .price-tag {
-            color: #dc3545;
-            font-weight: 700;
-            font-size: 1.25rem;
-        }
-
-        /* Khu vực Đặt hàng (Cart) */
-        .cart-section {
-            background: white;
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-            position: sticky;
-            top: 20px;
-        }
-
-        .form-control:focus {
-            border-color: #dc3545;
-            box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25);
-        }
-
-        .btn-order {
-            background-color: #dc3545;
-            border: none;
-            padding: 14px;
-            font-size: 1.1rem;
-            border-radius: 10px;
-            transition: all 0.2s;
-        }
-
-        .btn-order:hover:not(:disabled) {
-            background-color: #bb2d3b;
-            transform: scale(1.02);
-        }
-
-        /* QR Code Container */
-        .qr-container {
-            display: none;
-            text-align: center;
-            animation: fadeIn 0.5s ease-in-out;
-            background: #fff;
+            background-color: #212529; /* Nền tối cho màn hình bếp */
+            color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             padding: 20px;
-            border-radius: 12px;
-            border: 2px dashed #198754;
-            margin-top: 20px;
         }
-
-        .qr-img {
-            width: 100%;
-            max-width: 250px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .selected-item-display {
-            background: #f8f9fa;
-            padding: 12px;
-            border-radius: 8px;
-            border-left: 4px solid #dc3545;
-            margin-bottom: 15px;
-        }
-
-        /* Chatbot Widget */
-        .chat-widget {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            z-index: 1000;
-        }
-
-        .chat-btn {
-            background-color: #198754;
-            color: white;
-            border: none;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            font-size: 24px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            cursor: pointer;
-            transition: transform 0.3s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .chat-btn:hover {
-            transform: scale(1.1);
-        }
-
-        .chat-window {
-            display: none;
-            position: absolute;
-            bottom: 80px;
-            right: 0;
-            width: 350px;
-            height: 450px;
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .chat-header {
-            background: #198754;
-            color: white;
-            padding: 15px;
-            font-weight: bold;
+        .header-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 2px solid #495057;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
         }
-
-        .chat-header .close-btn {
-            cursor: pointer;
-            font-size: 20px;
+        .order-card {
+            background-color: #2c3034;
+            border: 1px solid #ffc107; /* Viền vàng nổi bật */
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
-
-        .chat-messages {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto;
+        .order-header {
             display: flex;
-            flex-direction: column;
-            gap: 10px;
-            background: #f8f9fa;
-            scroll-behavior: smooth;
-        }
-
-        .message {
-            max-width: 80%;
+            justify-content: space-between;
+            border-bottom: 1px solid #495057;
             padding: 10px 15px;
-            border-radius: 15px;
-            font-size: 0.95rem;
-            white-space: pre-line;
+            font-weight: bold;
         }
-
-        .msg-bot {
-            background: #e9ecef;
-            color: #333;
-            align-self: flex-start;
-            border-bottom-left-radius: 2px;
+        .order-body {
+            padding: 15px;
         }
-
-        .msg-user {
-            background: #198754;
+        .btn-complete {
+            background-color: #198754;
             color: white;
-            align-self: flex-end;
-            border-bottom-right-radius: 2px;
-        }
-
-        .chat-input {
-            display: flex;
-            padding: 10px;
-            border-top: 1px solid #dee2e6;
-            background: white;
-        }
-
-        .chat-input input {
-            flex: 1;
-            border: 1px solid #ced4da;
-            border-radius: 20px;
-            padding: 8px 15px;
-            outline: none;
-        }
-
-        .chat-input button {
-            background: none;
             border: none;
-            color: #198754;
-            font-size: 20px;
-            padding: 0 10px;
-            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-complete:hover {
+            background-color: #157347;
         }
     </style>
 </head>
 <body>
-
-    <!-- Hero Section -->
-    <div class="hero-section">
-        <div class="container">
-            <h1 class="brand-title"><i class="fa-solid fa-bowl-food text-warning"></i> Quán Phở Serverless</h1>
-            <p class="fs-5 mt-2">Hương vị truyền thống - Công nghệ hiện đại - Giao hàng siêu tốc</p>
+    <div class="container-fluid">
+        <!-- Tiêu đề trang -->
+        <div class="header-container">
+            <h2>🧑‍🍳 Màn Hình Bếp - Danh Sách Chế Biến (Real-time)</h2>
+            <span class="badge bg-success fs-6">Hệ thống hoạt động</span>
         </div>
-    </div>
-
-    <div class="container mb-5">
-        <div class="row g-4">
-            <!-- Khu vực Menu Chọn Món -->
-            <div class="col-lg-8">
-                <h3 class="mb-4 fw-bold"><i class="fa-solid fa-utensils me-2"></i>Thực Đơn Của Quán</h3>
-                <div class="row g-3">
-                    
-                    <!-- Món 1 -->
-                    <div class="col-md-6">
-                        <div class="food-card active" onclick="selectDish('Phở Bò Tái', 45000, this)">
-                            <img src="https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=500&q=80" alt="Phở Bò Tái" class="food-img">
-                            <div class="p-3 text-center">
-                                <h5 class="fw-bold mb-1">Phở Bò Tái</h5>
-                                <p class="text-muted small mb-2">Thịt bò tươi mềm, nước dùng ngọt thanh từ xương hầm 12 tiếng.</p>
-                                <div class="price-tag">45.000 VNĐ</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Món 2 -->
-                    <div class="col-md-6">
-                        <div class="food-card" onclick="selectDish('Phở Bò Nạm', 50000, this)">
-                            <img src="pho nam.jpg" alt="Phở Bò Nạm" class="food-img">
-                            <div class="p-3 text-center">
-                                <h5 class="fw-bold mb-1">Phở Bò Nạm</h5>
-                                <p class="text-muted small mb-2">Thịt nạm giòn sần sật, mỡ gầu béo ngậy hòa quyện gia vị quế hồi.</p>
-                                <div class="price-tag">50.000 VNĐ</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Món 3 -->
-                    <div class="col-md-6">
-                        <div class="food-card" onclick="selectDish('Phở Đặc Biệt', 65000, this)">
-                            <img src="pho-db.jpg" alt="Phở Đặc Biệt" class="food-img">
-                            <div class="p-3 text-center">
-                                <h5 class="fw-bold mb-1">Phở Đặc Biệt</h5>
-                                <p class="text-muted small mb-2">Tái, nạm, gầu, gân, bò viên kèm trứng chần bổ dưỡng.</p>
-                                <div class="price-tag">65.000 VNĐ</div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            <!-- Khu vực Giỏ hàng & Thanh toán -->
-            <div class="col-lg-4">
-                <div class="cart-section">
-                    <h4 class="fw-bold mb-4"><i class="fa-solid fa-receipt me-2"></i>Thông Tin Đặt Hàng</h4>
-                    
-                    <form id="orderForm">
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Họ và tên:</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white"><i class="fa-solid fa-user text-muted"></i></span>
-                                <input type="text" id="customerName" class="form-control" placeholder="Nhập tên người nhận..." required>
-                            </div>
-                        </div>
-
-                        <!-- Thêm SĐT -->
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Số điện thoại:</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white"><i class="fa-solid fa-phone text-muted"></i></span>
-                                <input type="tel" id="customerPhone" class="form-control" placeholder="Nhập số điện thoại..." required>
-                            </div>
-                        </div>
-
-                        <!-- Thêm Địa chỉ -->
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Địa chỉ giao hàng:</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white"><i class="fa-solid fa-location-dot text-muted"></i></span>
-                                <input type="text" id="customerAddress" class="form-control" placeholder="Nhập địa chỉ..." required>
-                            </div>
-                        </div>
-
-                        <div class="selected-item-display">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="text-muted">Món đang chọn:</span>
-                                <strong id="displayDishName" class="text-dark">Phở Bò Tái</strong>
-                            </div>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="text-muted">Tổng tiền:</span>
-                                <strong id="displayAmount" class="text-danger fs-5">45.000 VNĐ</strong>
-                            </div>
-                        </div>
-
-                        <button type="submit" id="btnSubmit" class="btn btn-order btn-danger w-100 fw-bold text-white shadow-sm">
-                            <i class="fa-solid fa-wallet me-2"></i>TẠO ĐƠN & THANH TOÁN
-                        </button>
-                    </form>
-
-                    <!-- Khung quét mã QR -->
-                    <div id="qrSection" class="qr-container">
-                        <h5 class="text-success fw-bold"><i class="fa-solid fa-circle-check me-2"></i>Tạo đơn thành công!</h5>
-                        <p class="small text-muted mb-3">Quét mã VietQR bên dưới để thanh toán. Bếp sẽ chuẩn bị món ngay sau khi nhận được tiền.</p>
-                        <img id="qrImage" src="" alt="Mã QR Thanh Toán" class="qr-img mb-2">
-                        <div class="bg-light p-2 rounded border">
-                            <p class="mb-0 small">Mã đơn hàng: <strong id="displayOrderId" class="text-primary"></strong></p>
-                        </div>
-                    </div>
-                </div>
+        
+        <!-- Khu vực chứa lưới đơn hàng -->
+        <div class="row" id="ordersContainer">
+            <div class="col-12 text-center text-muted mt-5" id="loadingMsg">
+                <h4>Đang tải dữ liệu đơn hàng...</h4>
             </div>
         </div>
-    </div>
-
-    <!-- Chatbot Widget -->
-    <div class="chat-widget">
-        <!-- Cửa sổ chat -->
-        <div class="chat-window" id="chatWindow">
-            <div class="chat-header">
-                <span><i class="fa-solid fa-robot me-2"></i> Phở AI Assistant</span>
-                <span class="close-btn" onclick="toggleChat()">&times;</span>
-            </div>
-            <div class="chat-messages" id="chatMessages">
-                <div class="message msg-bot">Xin chào! Tôi là trợ lý AI của quán. Bạn muốn đặt phở gì hôm nay?</div>
-            </div>
-            <div class="chat-input">
-                <input type="text" id="aiInput" placeholder="Nhập tin nhắn..." onkeypress="handleAIKeyPress(event)">
-                <button onclick="sendAIMessage()"><i class="fa-solid fa-paper-plane"></i></button>
-            </div>
-        </div>
-        <!-- Nút bong bóng chat -->
-        <button class="chat-btn" onclick="toggleChat()">
-            <i class="fa-solid fa-message"></i>
-        </button>
     </div>
 
     <script>
-        // Cấu hình API và Ngân hàng
+        // Đường dẫn API Azure Function của bạn
         const API_BASE = "https://fn-order-vugiakhoi-btbzhyd6h6ahc7bw.southeastasia-01.azurewebsites.net/api";
-        const BANK_ID = "MB"; 
-        const ACCOUNT_NO = "090000000000"; // THAY BẰNG STK THỰC TẾ CỦA BẠN
-        const ACCOUNT_NAME = "VU GIA KHOI";
-
-        // Biến lưu trạng thái món đang chọn trên web
-        let currentDish = "Phở Bò Tái";
-        let currentAmount = 45000;
-
-        // Biến lưu TRẠNG THÁI CUỘC TRÒ CHUYỆN CỦA AI (Mở rộng cho SĐT & Địa chỉ)
-        let aiState = "IDLE";
-        let aiPendingDish = "";
-        let aiPendingPrice = 0;
-        let aiPendingName = "";
-        let aiPendingPhone = "";
-
-        // Hàm xử lý khi click chọn món ăn trên Web
-        function selectDish(dishName, price, element) {
-            document.querySelectorAll('.food-card').forEach(card => card.classList.remove('active'));
-            if(element) element.classList.add('active');
-
-            currentDish = dishName;
-            currentAmount = price;
-
-            document.getElementById('displayDishName').innerText = dishName;
-            document.getElementById('displayAmount').innerText = price.toLocaleString('vi-VN') + " VNĐ";
-            
-            document.getElementById('qrSection').style.display = 'none';
-            const btn = document.getElementById('btnSubmit');
-            btn.disabled = false;
-            btn.innerHTML = `<i class="fa-solid fa-wallet me-2"></i>TẠO ĐƠN & THANH TOÁN`;
-        }
-
-        // Xử lý sự kiện submit form truyền thống
-        document.getElementById('orderForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btnSubmit');
-            
-            // Lấy thêm SĐT và Địa chỉ
-            const customerName = document.getElementById('customerName').value;
-            const customerPhone = document.getElementById('customerPhone').value;
-            const customerAddress = document.getElementById('customerAddress').value;
-
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý...';
-
+        
+        // Hàm gọi API lấy danh sách đơn hàng
+        async function fetchOrders() {
             try {
-                const res = await fetch(`${API_BASE}/CreateOrder`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        customerName: customerName, 
-                        customerPhone: customerPhone,
-                        customerAddress: customerAddress,
-                        dish: currentDish, 
-                        amount: currentAmount 
-                    })
-                });
-
-                const data = await res.json();
-
-                if (res.ok) {
-                    const orderId = (data.order && data.order.id) ? data.order.id : data.orderId;
-                    const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-compact2.png?amount=${currentAmount}&addInfo=${orderId}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
-                    
-                    document.getElementById('qrImage').src = qrUrl;
-                    document.getElementById('displayOrderId').innerText = orderId;
-                    document.getElementById('qrSection').style.display = 'block';
-                    
-                    btn.innerHTML = `<i class="fa-solid fa-check me-2"></i>Chờ thanh toán...`;
-                } else {
-                    const errMsg = data.error || data.details || JSON.stringify(data);
-                    alert("Lỗi tạo đơn: " + errMsg);
-                    btn.disabled = false;
-                    btn.innerHTML = `<i class="fa-solid fa-wallet me-2"></i>TẠO ĐƠN & THANH TOÁN`;
+                const response = await fetch(`${API_BASE}/GetOrders`);
+                if (response.ok) {
+                    const orders = await response.json();
+                    renderOrders(orders);
                 }
-            } catch (err) {
-                console.error("Lỗi:", err);
-                alert("Không thể kết nối đến server: " + err.message);
-                btn.disabled = false;
-                btn.innerHTML = `<i class="fa-solid fa-wallet me-2"></i>TẠO ĐƠN & THANH TOÁN`;
-            }
-        });
-
-        // --- LOGIC CHO AI CHATBOT ---
-
-        function toggleChat() {
-            const chatWindow = document.getElementById('chatWindow');
-            chatWindow.style.display = chatWindow.style.display === 'flex' ? 'none' : 'flex';
-        }
-
-        function handleAIKeyPress(e) {
-            if (e.key === 'Enter') sendAIMessage();
-        }
-
-        async function sendAIMessage() {
-            const inputField = document.getElementById('aiInput');
-            const userText = inputField.value.trim();
-            if (!userText) return;
-
-            appendMessage('user', userText);
-            inputField.value = '';
-
-            const typingId = appendMessage('bot', 'Đang xử lý...');
-
-            const aiResponse = await simulateAIProcess(userText);
-            
-            document.getElementById(typingId).remove();
-            appendMessage('bot', aiResponse.message);
-
-            if (aiResponse.action === 'order') {
-                placeOrderFromAI(aiResponse.dish, aiResponse.price, aiResponse.customerName, aiResponse.customerPhone, aiResponse.customerAddress);
+            } catch (error) {
+                console.error("Lỗi khi tải đơn hàng:", error);
             }
         }
 
-        function appendMessage(sender, text) {
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `message msg-${sender}`;
-            msgDiv.innerText = text;
-            msgDiv.id = 'msg-' + Date.now();
+        // Hàm vẽ đơn hàng ra giao diện
+        function renderOrders(orders) {
+            const container = document.getElementById('ordersContainer');
             
-            const chatMessages = document.getElementById('chatMessages');
-            chatMessages.appendChild(msgDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight; 
-            return msgDiv.id;
-        }
+            // Lọc chỉ lấy các đơn đang ở trạng thái Pending
+            const pendingOrders = orders.filter(o => o.status === 'Pending');
 
-        async function simulateAIProcess(text) {
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    const lowerText = text.toLowerCase();
-                    
-                    // TRẠNG THÁI 3: AI đợi khách nhập Địa chỉ (Hoàn tất đơn)
-                    if (aiState === "WAITING_FOR_ADDRESS") {
-                        const customerAddress = text;
-                        aiState = "IDLE"; // Reset trạng thái
-                        
-                        resolve({
-                            action: 'order',
-                            dish: aiPendingDish,
-                            price: aiPendingPrice,
-                            customerName: aiPendingName,
-                            customerPhone: aiPendingPhone,
-                            customerAddress: customerAddress,
-                            message: `Dạ vâng, em đã lên đơn ${aiPendingDish} giao đến ${customerAddress}. Anh/chị kiểm tra thông tin và quét mã QR ở màn hình chính bên cạnh để thanh toán nhé!`
-                        });
-                        return;
-                    }
+            if (pendingOrders.length === 0) {
+                container.innerHTML = '<div class="col-12 text-center text-muted mt-5"><h4>Chưa có đơn hàng nào cần chế biến.</h4></div>';
+                return;
+            }
 
-                    // TRẠNG THÁI 2: AI đợi khách nhập Số Điện Thoại
-                    if (aiState === "WAITING_FOR_PHONE") {
-                        aiPendingPhone = text; 
-                        aiState = "WAITING_FOR_ADDRESS"; // Chuyển sang đợi địa chỉ
-                        
-                        resolve({
-                            action: 'chat',
-                            message: `Dạ em nhận được SĐT rồi. Cuối cùng, anh/chị cho em xin Địa chỉ giao hàng nhé!`
-                        });
-                        return;
-                    }
+            container.innerHTML = ''; // Xóa thông báo loading
 
-                    // TRẠNG THÁI 1: AI đợi khách nhập Tên
-                    if (aiState === "WAITING_FOR_NAME") {
-                        aiPendingName = text; 
-                        aiState = "WAITING_FOR_PHONE"; // Chuyển sang đợi SĐT
-                        
-                        resolve({
-                            action: 'chat',
-                            message: `Dạ chào anh/chị ${aiPendingName}. Anh/chị cho em xin Số Điện Thoại liên lạc nhé!`
-                        });
-                        return;
-                    }
+            // Duyệt qua từng đơn hàng và tạo thẻ HTML
+            pendingOrders.forEach(order => {
+                const col = document.createElement('div');
+                col.className = 'col-md-4 col-lg-3';
+                
+                // Định dạng thời gian
+                const orderDate = new Date(order.createdAt || Date.now());
+                const timeString = orderDate.toLocaleTimeString('vi-VN');
 
-                    // Xử lý các câu hỏi bình thường
-                    if (lowerText.includes("có gì") || lowerText.includes("thực đơn") || lowerText.includes("menu") || lowerText.includes("món gì")) {
-                        resolve({
-                            action: 'chat',
-                            message: "Dạ hôm nay quán em phục vụ 3 món chính ạ:\n🍲 Phở Bò Tái (45.000 VNĐ)\n🍲 Phở Bò Nạm (50.000 VNĐ)\n🍲 Phở Đặc Biệt (65.000 VNĐ)\n\nAnh/chị muốn dùng món nào cứ nhắn em nhé!"
-                        });
-                        return;
-                    }
-                    
-                    if (lowerText.includes("đặt") || lowerText.includes("cho 1") || lowerText.includes("lấy 1") || lowerText.includes("mua") || lowerText.includes("cho mình") || lowerText.includes("cho em") || lowerText.includes("phở")) {
-                        let dish = "Phở Bò Tái";
-                        let price = 45000;
-                        
-                        if (lowerText.includes("đặc biệt") || lowerText.includes("đặt biệt") || lowerText.includes("đb")) {
-                            dish = "Phở Đặc Biệt";
-                            price = 65000;
-                        } else if (lowerText.includes("nạm")) {
-                            dish = "Phở Bò Nạm";
-                            price = 50000;
-                        }
-                        
-                        aiPendingDish = dish;
-                        aiPendingPrice = price;
-                        aiState = "WAITING_FOR_NAME";
+                // Kiểm tra xem khách có nhập SĐT và Địa chỉ không
+                const phoneStr = order.customerPhone ? `<p class="mb-1 text-light">SĐT: <strong>${order.customerPhone}</strong></p>` : '';
+                const addressStr = order.customerAddress ? `<p class="mb-1 text-light">Đ/c: <strong>${order.customerAddress}</strong></p>` : '';
 
-                        resolve({
-                            action: 'chat',
-                            message: `Dạ anh/chị muốn đặt ${dish} đúng không ạ?\nAnh/chị cho em xin Tên để quán tạo đơn nhé!`
-                        });
-                        return;
-                    } 
-                    
-                    resolve({
-                        action: 'chat',
-                        message: "Dạ em là AI của quán. Anh/chị muốn gọi Phở Tái, Nạm hay Phở Đặc Biệt ạ?"
-                    });
-                }, 1000);
+                col.innerHTML = `
+                    <div class="order-card">
+                        <div class="order-header">
+                            <span>${timeString}</span>
+                            <span class="badge bg-success">Đã TT</span>
+                        </div>
+                        <div class="order-body">
+                            <h4 class="text-warning mb-3">${order.dish}</h4>
+                            <p class="mb-1 text-light">Khách: <strong>${order.customerName}</strong></p>
+                            ${phoneStr}
+                            ${addressStr}
+                            <p class="text-muted small mb-2 mt-2">Mã: ${order.id || order.orderId}</p>
+                            <p class="mb-3">Trạng thái: <span class="badge bg-info text-dark">Pending</span></p>
+                            
+                            <button class="btn btn-complete w-100 fw-bold py-2" onclick="completeOrder('${order.id || order.orderId}')">
+                                ☑ ĐÃ XONG (GIAO MÓN)
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(col);
             });
         }
 
-        async function placeOrderFromAI(dish, price, customerName, customerPhone, customerAddress) {
+        // Hàm cập nhật trạng thái đơn hàng khi làm xong
+        async function completeOrder(orderId) {
             try {
-                // Điền thông tin vào giao diện web
-                const targetCard = Array.from(document.querySelectorAll('.food-card')).find(el => el.innerText.includes(dish));
-                selectDish(dish, price, targetCard);
-                document.getElementById('customerName').value = customerName;
-                document.getElementById('customerPhone').value = customerPhone;
-                document.getElementById('customerAddress').value = customerAddress;
-
-                const res = await fetch(`${API_BASE}/CreateOrder`, {
+                const response = await fetch(`${API_BASE}/UpdateOrder`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        customerName: customerName, 
-                        customerPhone: customerPhone,
-                        customerAddress: customerAddress,
-                        dish: dish, 
-                        amount: price 
-                    })
+                    body: JSON.stringify({ id: orderId, status: 'Completed' })
                 });
-
-                const data = await res.json();
-
-                if (res.ok) {
-                    const orderId = (data.order && data.order.id) ? data.order.id : data.orderId;
-                    const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-compact2.png?amount=${price}&addInfo=${orderId}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
-                    
-                    document.getElementById('qrImage').src = qrUrl;
-                    document.getElementById('displayOrderId').innerText = orderId;
-                    document.getElementById('qrSection').style.display = 'block';
-                    
-                    const btn = document.getElementById('btnSubmit');
-                    btn.innerHTML = `<i class="fa-solid fa-check me-2"></i>Chờ thanh toán...`;
-                    btn.disabled = true;
+                
+                if (response.ok) {
+                    fetchOrders(); // Làm mới lại màn hình ngay lập tức
+                } else {
+                    alert("Lỗi khi cập nhật trạng thái đơn hàng!");
                 }
-            } catch (err) {
-                appendMessage('bot', 'Xin lỗi, hệ thống tạo đơn đang gặp sự cố. Vui lòng thử lại sau!');
+            } catch (error) {
+                console.error("Lỗi:", error);
             }
         }
+
+        // Kỹ thuật Polling: Tự động gọi API làm mới danh sách mỗi 3 giây
+        setInterval(fetchOrders, 3000);
+        
+        // Gọi lần đầu khi vừa mở trang
+        fetchOrders();
     </script>
 </body>
 </html>
