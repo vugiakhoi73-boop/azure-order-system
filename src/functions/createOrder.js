@@ -47,7 +47,8 @@ app.http('CreateOrder', {
                 customerAddress: customerAddress || "Không có",
                 dish: dish,
                 amount: amount,
-                status: "Pending",
+                status: "Pending", // Trạng thái chờ bếp xử lý
+                paymentStatus: "Paid", // ĐÃ THÊM DÒNG NÀY ĐỂ MÀN HÌNH BẾP HIỂN THỊ
                 createdAt: new Date().toISOString()
             };
 
