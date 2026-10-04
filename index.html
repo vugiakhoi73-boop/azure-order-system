@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quán Phở Serverless - Đặt Hàng Nhanh Chóng</title>
+    
     <!-- Cấu hình PWA App Mobile -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#198754">
@@ -19,6 +20,7 @@
             });
         }
     </script>
+
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     <!-- Bootstrap 5 -->
@@ -323,10 +325,28 @@
                     
                     <form id="orderForm">
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Họ và tên của bạn:</label>
+                            <label class="form-label fw-semibold">Họ và tên:</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-white"><i class="fa-solid fa-user text-muted"></i></span>
                                 <input type="text" id="customerName" class="form-control" placeholder="Nhập tên người nhận..." required>
+                            </div>
+                        </div>
+
+                        <!-- Thêm SĐT -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Số điện thoại:</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="fa-solid fa-phone text-muted"></i></span>
+                                <input type="tel" id="customerPhone" class="form-control" placeholder="Nhập số điện thoại..." required>
+                            </div>
+                        </div>
+
+                        <!-- Thêm Địa chỉ -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Địa chỉ giao hàng:</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="fa-solid fa-location-dot text-muted"></i></span>
+                                <input type="text" id="customerAddress" class="form-control" placeholder="Nhập địa chỉ..." required>
                             </div>
                         </div>
 
@@ -393,10 +413,12 @@
         let currentDish = "Phở Bò Tái";
         let currentAmount = 45000;
 
-        // Biến lưu TRẠNG THÁI CUỘC TRÒ CHUYỆN CỦA AI
+        // Biến lưu TRẠNG THÁI CUỘC TRÒ CHUYỆN CỦA AI (Mở rộng cho SĐT & Địa chỉ)
         let aiState = "IDLE";
         let aiPendingDish = "";
         let aiPendingPrice = 0;
+        let aiPendingName = "";
+        let aiPendingPhone = "";
 
         // Hàm xử lý khi click chọn món ăn trên Web
         function selectDish(dishName, price, element) {
@@ -419,7 +441,11 @@
         document.getElementById('orderForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnSubmit');
+            
+            // Lấy thêm SĐT và Địa chỉ
             const customerName = document.getElementById('customerName').value;
+            const customerPhone = document.getElementById('customerPhone').value;
+            const customerAddress = document.getElementById('customerAddress').value;
 
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý...';
@@ -430,6 +456,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         customerName: customerName, 
+                        customerPhone: customerPhone,
+                        customerAddress: customerAddress,
                         dish: currentDish, 
                         amount: currentAmount 
                     })
@@ -487,7 +515,7 @@
             appendMessage('bot', aiResponse.message);
 
             if (aiResponse.action === 'order') {
-                placeOrderFromAI(aiResponse.dish, aiResponse.price, aiResponse.customerName);
+                placeOrderFromAI(aiResponse.dish, aiResponse.price, aiResponse.customerName, aiResponse.customerPhone, aiResponse.customerAddress);
             }
         }
 
@@ -508,22 +536,48 @@
                 setTimeout(() => {
                     const lowerText = text.toLowerCase();
                     
-                    // TRẠNG THÁI 1: Nếu AI đang đợi khách nhập tên
-                    if (aiState === "WAITING_FOR_NAME") {
-                        const customerName = text; 
-                        aiState = "IDLE"; 
+                    // TRẠNG THÁI 3: AI đợi khách nhập Địa chỉ (Hoàn tất đơn)
+                    if (aiState === "WAITING_FOR_ADDRESS") {
+                        const customerAddress = text;
+                        aiState = "IDLE"; // Reset trạng thái
                         
                         resolve({
                             action: 'order',
                             dish: aiPendingDish,
                             price: aiPendingPrice,
-                            customerName: customerName,
-                            message: `Dạ vâng, em đã lên đơn ${aiPendingDish} cho anh/chị ${customerName}. Anh/chị xem mã QR ở màn hình chính bên cạnh để thanh toán nhé!`
+                            customerName: aiPendingName,
+                            customerPhone: aiPendingPhone,
+                            customerAddress: customerAddress,
+                            message: `Dạ vâng, em đã lên đơn ${aiPendingDish} giao đến ${customerAddress}. Anh/chị kiểm tra thông tin và quét mã QR ở màn hình chính bên cạnh để thanh toán nhé!`
                         });
                         return;
                     }
 
-                    // TRẠNG THÁI 2: Xử lý các câu hỏi bình thường
+                    // TRẠNG THÁI 2: AI đợi khách nhập Số Điện Thoại
+                    if (aiState === "WAITING_FOR_PHONE") {
+                        aiPendingPhone = text; 
+                        aiState = "WAITING_FOR_ADDRESS"; // Chuyển sang đợi địa chỉ
+                        
+                        resolve({
+                            action: 'chat',
+                            message: `Dạ em nhận được SĐT rồi. Cuối cùng, anh/chị cho em xin Địa chỉ giao hàng nhé!`
+                        });
+                        return;
+                    }
+
+                    // TRẠNG THÁI 1: AI đợi khách nhập Tên
+                    if (aiState === "WAITING_FOR_NAME") {
+                        aiPendingName = text; 
+                        aiState = "WAITING_FOR_PHONE"; // Chuyển sang đợi SĐT
+                        
+                        resolve({
+                            action: 'chat',
+                            message: `Dạ chào anh/chị ${aiPendingName}. Anh/chị cho em xin Số Điện Thoại liên lạc nhé!`
+                        });
+                        return;
+                    }
+
+                    // Xử lý các câu hỏi bình thường
                     if (lowerText.includes("có gì") || lowerText.includes("thực đơn") || lowerText.includes("menu") || lowerText.includes("món gì")) {
                         resolve({
                             action: 'chat',
@@ -536,7 +590,6 @@
                         let dish = "Phở Bò Tái";
                         let price = 45000;
                         
-                        // Cập nhật để hỗ trợ lỗi chính tả "đặt biệt" hoặc viết tắt "đb"
                         if (lowerText.includes("đặc biệt") || lowerText.includes("đặt biệt") || lowerText.includes("đb")) {
                             dish = "Phở Đặc Biệt";
                             price = 65000;
@@ -551,7 +604,7 @@
 
                         resolve({
                             action: 'chat',
-                            message: `Dạ anh/chị muốn đặt ${dish} đúng không ạ?\nAnh/chị cho em xin Tên để quán ghi chú lên đơn nhé!`
+                            message: `Dạ anh/chị muốn đặt ${dish} đúng không ạ?\nAnh/chị cho em xin Tên để quán tạo đơn nhé!`
                         });
                         return;
                     } 
@@ -564,17 +617,22 @@
             });
         }
 
-        async function placeOrderFromAI(dish, price, customerName) {
+        async function placeOrderFromAI(dish, price, customerName, customerPhone, customerAddress) {
             try {
+                // Điền thông tin vào giao diện web
                 const targetCard = Array.from(document.querySelectorAll('.food-card')).find(el => el.innerText.includes(dish));
                 selectDish(dish, price, targetCard);
                 document.getElementById('customerName').value = customerName;
+                document.getElementById('customerPhone').value = customerPhone;
+                document.getElementById('customerAddress').value = customerAddress;
 
                 const res = await fetch(`${API_BASE}/CreateOrder`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         customerName: customerName, 
+                        customerPhone: customerPhone,
+                        customerAddress: customerAddress,
                         dish: dish, 
                         amount: price 
                     })
