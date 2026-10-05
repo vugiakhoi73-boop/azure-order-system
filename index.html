@@ -409,16 +409,13 @@
         const ACCOUNT_NO = "090000000000"; // THAY BẰNG STK THỰC TẾ CỦA BẠN
         const ACCOUNT_NAME = "VU GIA KHOI";
 
+        // Cấu hình kết nối Ollama Local AI
+        const OLLAMA_API_URL = "http://localhost:11434/api/generate";
+        let chatHistory = []; 
+
         // Biến lưu trạng thái món đang chọn trên web
         let currentDish = "Phở Bò Tái";
         let currentAmount = 45000;
-
-        // Biến lưu TRẠNG THÁI CUỘC TRÒ CHUYỆN CỦA AI (Mở rộng cho SĐT & Địa chỉ)
-        let aiState = "IDLE";
-        let aiPendingDish = "";
-        let aiPendingPrice = 0;
-        let aiPendingName = "";
-        let aiPendingPhone = "";
 
         // Hàm xử lý khi click chọn món ăn trên Web
         function selectDish(dishName, price, element) {
@@ -442,7 +439,6 @@
             e.preventDefault();
             const btn = document.getElementById('btnSubmit');
             
-            // Lấy thêm SĐT và Địa chỉ
             const customerName = document.getElementById('customerName').value;
             const customerPhone = document.getElementById('customerPhone').value;
             const customerAddress = document.getElementById('customerAddress').value;
@@ -488,7 +484,7 @@
             }
         });
 
-        // --- LOGIC CHO AI CHATBOT ---
+        // --- LOGIC CHO AI CHATBOT OLLAMA ---
 
         function toggleChat() {
             const chatWindow = document.getElementById('chatWindow');
@@ -507,16 +503,12 @@
             appendMessage('user', userText);
             inputField.value = '';
 
-            const typingId = appendMessage('bot', 'Đang xử lý...');
+            const typingId = appendMessage('bot', 'AI đang suy nghĩ...');
 
             const aiResponse = await simulateAIProcess(userText);
             
             document.getElementById(typingId).remove();
             appendMessage('bot', aiResponse.message);
-
-            if (aiResponse.action === 'order') {
-                placeOrderFromAI(aiResponse.dish, aiResponse.price, aiResponse.customerName, aiResponse.customerPhone, aiResponse.customerAddress);
-            }
         }
 
         function appendMessage(sender, text) {
@@ -532,96 +524,83 @@
         }
 
         async function simulateAIProcess(text) {
-            return new Promise(resolve => {
-                setTimeout(() => {
-                    const lowerText = text.toLowerCase();
-                    
-                    // TRẠNG THÁI 3: AI đợi khách nhập Địa chỉ (Hoàn tất đơn)
-                    if (aiState === "WAITING_FOR_ADDRESS") {
-                        const customerAddress = text;
-                        aiState = "IDLE"; // Reset trạng thái
-                        
-                        resolve({
-                            action: 'order',
-                            dish: aiPendingDish,
-                            price: aiPendingPrice,
-                            customerName: aiPendingName,
-                            customerPhone: aiPendingPhone,
-                            customerAddress: customerAddress,
-                            message: `Dạ vâng, em đã lên đơn ${aiPendingDish} giao đến ${customerAddress}. Anh/chị kiểm tra thông tin và quét mã QR ở màn hình chính bên cạnh để thanh toán nhé!`
-                        });
-                        return;
-                    }
+            chatHistory.push(`Khách: ${text}`);
+            if (chatHistory.length > 8) chatHistory.shift(); 
 
-                    // TRẠNG THÁI 2: AI đợi khách nhập Số Điện Thoại
-                    if (aiState === "WAITING_FOR_PHONE") {
-                        aiPendingPhone = text; 
-                        aiState = "WAITING_FOR_ADDRESS"; // Chuyển sang đợi địa chỉ
-                        
-                        resolve({
-                            action: 'chat',
-                            message: `Dạ em nhận được SĐT rồi. Cuối cùng, anh/chị cho em xin Địa chỉ giao hàng nhé!`
-                        });
-                        return;
-                    }
+            const systemPrompt = `Bạn là nhân viên AI cực kỳ thông minh, vui tính của Quán Phở Serverless. 
+DỮ LIỆU QUÁN:
+- Phở Bò Tái: 45000 VNĐ
+- Phở Bò Nạm: 50000 VNĐ
+- Phở Đặc Biệt: 65000 VNĐ
 
-                    // TRẠNG THÁI 1: AI đợi khách nhập Tên
-                    if (aiState === "WAITING_FOR_NAME") {
-                        aiPendingName = text; 
-                        aiState = "WAITING_FOR_PHONE"; // Chuyển sang đợi SĐT
-                        
-                        resolve({
-                            action: 'chat',
-                            message: `Dạ chào anh/chị ${aiPendingName}. Anh/chị cho em xin Số Điện Thoại liên lạc nhé!`
-                        });
-                        return;
-                    }
+BẠN BẮT BUỘC PHẢI TRẢ VỀ ĐỊNH DẠNG JSON NHƯ SAU TRONG MỌI TRƯỜNG HỢP:
+{
+    "message": "Câu trả lời của bạn",
+    "action": "chat" hoặc "create_order",
+    "order_details": {
+        "dish": "Tên món (nếu có)",
+        "price": Giá tiền (số),
+        "customerName": "Tên khách",
+        "customerPhone": "SĐT",
+        "customerAddress": "Địa chỉ"
+    }
+}
 
-                    // Xử lý các câu hỏi bình thường
-                    if (lowerText.includes("có gì") || lowerText.includes("thực đơn") || lowerText.includes("menu") || lowerText.includes("món gì")) {
-                        resolve({
-                            action: 'chat',
-                            message: "Dạ hôm nay quán em phục vụ 3 món chính ạ:\n🍲 Phở Bò Tái (45.000 VNĐ)\n🍲 Phở Bò Nạm (50.000 VNĐ)\n🍲 Phở Đặc Biệt (65.000 VNĐ)\n\nAnh/chị muốn dùng món nào cứ nhắn em nhé!"
-                        });
-                        return;
-                    }
-                    
-                    if (lowerText.includes("đặt") || lowerText.includes("cho 1") || lowerText.includes("lấy 1") || lowerText.includes("mua") || lowerText.includes("cho mình") || lowerText.includes("cho em") || lowerText.includes("phở")) {
-                        let dish = "Phở Bò Tái";
-                        let price = 45000;
-                        
-                        if (lowerText.includes("đặc biệt") || lowerText.includes("đặt biệt") || lowerText.includes("đb")) {
-                            dish = "Phở Đặc Biệt";
-                            price = 65000;
-                        } else if (lowerText.includes("nạm")) {
-                            dish = "Phở Bò Nạm";
-                            price = 50000;
-                        }
-                        
-                        aiPendingDish = dish;
-                        aiPendingPrice = price;
-                        aiState = "WAITING_FOR_NAME";
+QUY TẮC HOẠT ĐỘNG:
+1. Giao tiếp phiếm: Nếu khách hỏi những vấn đề không liên quan đến đặt món (thời tiết, kiến thức, kể chuyện, tâm sự...), hãy trả lời thật tự nhiên, hài hước và thân thiện vào trường "message". Giữ "action": "chat" và để trống các giá trị trong "order_details".
+2. Khách muốn đặt phở: Nếu khách bắt đầu gọi món nhưng chưa đủ 4 thông tin (Món, Tên, SĐT, Địa chỉ), hãy hỏi khéo léo để xin thêm thông tin. Giữ "action": "chat".
+3. Chốt đơn: KHI VÀ CHỈ KHI khách đã cung cấp đủ 4 thông tin trên, hãy đổi "action": "create_order" và điền chuẩn xác vào "order_details".
+TUYỆT ĐỐI CHỈ XUẤT RA CHUỖI JSON HỢP LỆ, KHÔNG CÓ BẤT KỲ VĂN BẢN NÀO BÊN NGOÀI.
 
-                        resolve({
-                            action: 'chat',
-                            message: `Dạ anh/chị muốn đặt ${dish} đúng không ạ?\nAnh/chị cho em xin Tên để quán tạo đơn nhé!`
-                        });
-                        return;
-                    } 
-                    
-                    resolve({
-                        action: 'chat',
-                        message: "Dạ em là AI của quán. Anh/chị muốn gọi Phở Tái, Nạm hay Phở Đặc Biệt ạ?"
-                    });
-                }, 1000);
-            });
+LỊCH SỬ CHAT:
+${chatHistory.join("\n")}
+`;
+
+            try {
+                const res = await fetch(OLLAMA_API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: "llama3", 
+                        prompt: systemPrompt,
+                        format: "json", 
+                        stream: false
+                    })
+                });
+
+                if (!res.ok) throw new Error("Lỗi API Ollama");
+                const data = await res.json();
+                
+                const aiResponse = JSON.parse(data.response);
+                chatHistory.push(`AI: ${aiResponse.message}`);
+
+                // Tạo đơn tự động khi đủ dữ kiện
+                if (aiResponse.action === 'create_order' && aiResponse.order_details) {
+                    placeOrderFromAI(
+                        aiResponse.order_details.dish, 
+                        aiResponse.order_details.price, 
+                        aiResponse.order_details.customerName, 
+                        aiResponse.order_details.customerPhone, 
+                        aiResponse.order_details.customerAddress
+                    );
+                    return { action: 'order', message: aiResponse.message + "\n\n🤖 Đang tự động kết nối hệ thống tạo đơn..." };
+                }
+
+                // Trả lời chat bình thường
+                return { action: 'chat', message: aiResponse.message };
+
+            } catch (err) {
+                console.error("Lỗi kết nối AI:", err);
+                return { action: 'chat', message: "Hệ thống AI đang ngủ. Bạn điền form bên cạnh giúp mình nhé!" };
+            }
         }
 
         async function placeOrderFromAI(dish, price, customerName, customerPhone, customerAddress) {
             try {
                 // Điền thông tin vào giao diện web
                 const targetCard = Array.from(document.querySelectorAll('.food-card')).find(el => el.innerText.includes(dish));
-                selectDish(dish, price, targetCard);
+                if(targetCard) selectDish(dish, price, targetCard);
+                
                 document.getElementById('customerName').value = customerName;
                 document.getElementById('customerPhone').value = customerPhone;
                 document.getElementById('customerAddress').value = customerAddress;
