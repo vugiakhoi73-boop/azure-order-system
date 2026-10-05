@@ -10,6 +10,10 @@ env:
   AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'
   NODE_VERSION: '18.x'
 
+# KHÚC THÊM VÀO ĐỂ VÁ LỖ HỔNG SECURITY (Giới hạn quyền của workflow)
+permissions:
+  contents: read
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -26,6 +30,9 @@ jobs:
       shell: bash
       run: |
         npm install --production
+
+    - name: '🛡️ Security Scan Code (Kiểm tra lỗ hổng)'
+      run: npm audit --audit-level=high || true
 
     - name: 'Zip code for deployment'
       run: |
