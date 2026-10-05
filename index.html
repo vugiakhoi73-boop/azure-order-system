@@ -377,7 +377,7 @@
     <script>
         const API_BASE = "https://fn-order-vugiakhoi-btbzhyd6h6ahc7bw.southeastasia-01.azurewebsites.net/api";
         const BANK_ID = "MB"; 
-        const ACCOUNT_NO = "090000000000"; 
+        const ACCOUNT_NO = "090000000000"; // Thay số tài khoản của bạn vào đây
         const ACCOUNT_NAME = "VU GIA KHOI";
 
         const OLLAMA_API_URL = "http://localhost:11434/api/generate";
@@ -451,15 +451,15 @@
             chatHistory.push(`Khách: ${text}`);
             if (chatHistory.length > 10) chatHistory.shift(); 
 
-            // LUẬT CẤM BỊA ĐẶT THÔNG TIN CHO AI
-            const systemPrompt = `Bạn là nhân viên AI của Quán Phở Serverless.
+            // CẬP NHẬT PROMPT: Bơm "tâm hồn" cho AI và hướng dẫn xử lý tình huống
+            const systemPrompt = `Bạn là một nhân viên phục vụ bàn bằng xương bằng thịt, cực kỳ thân thiện, tâm lý và duyên dáng tại Quán Phở Serverless. 
 DỮ LIỆU THỰC ĐƠN: Phở Bò Tái (45000), Phở Bò Nạm (50000), Phở Đặc Biệt (65000).
 
-BẠN LÀ MỘT API TRẢ VỀ JSON. KHÔNG ĐƯỢC CÓ BẤT KỲ CHỮ NÀO BÊN NGOÀI JSON.
+Mặc dù giao tiếp qua hệ thống máy tính, BẠN PHẢI HÀNH XỬ NHƯ MỘT CON NGƯỜI. Bạn bắt buộc trả về định dạng JSON, nhưng nội dung trong trường "message" phải đầy cảm xúc.
 
-ĐỊNH DẠNG JSON BẮT BUỘC:
+ĐỊNH DẠNG JSON DUY NHẤT ĐƯỢC PHÉP TRẢ VỀ:
 {
-    "message": "Câu nói giao tiếp tự nhiên của bạn",
+    "message": "Câu chat của bạn",
     "action": "chat" hoặc "create_order",
     "order_details": {
         "dish": "Tên món",
@@ -470,10 +470,15 @@ BẠN LÀ MỘT API TRẢ VỀ JSON. KHÔNG ĐƯỢC CÓ BẤT KỲ CHỮ NÀO B
     }
 }
 
-QUY TẮC SỐNG CÒN (BẮT BUỘC TUÂN THỦ):
-1. KHÔNG ĐƯỢC TỰ BỊA ĐẶT THÔNG TIN: Tuyệt đối CHỈ lấy Tên, SĐT, Địa chỉ nếu Khách ĐÃ THẬT SỰ NHẬP vào trong LỊCH SỬ TRÒ CHUYỆN.
-2. NẾU KHÁCH CHƯA CHO ĐỦ THÔNG TIN: Đặt action="chat", giữ các trường chưa biết là chuỗi rỗng (""), và dùng trường "message" để HỎI XIN phần thông tin còn thiếu.
-3. CHỈ KHI KHÁCH ĐÃ CHO ĐỦ CẢ MÓN, TÊN, SĐT VÀ ĐỊA CHỈ: Mới được đổi action="create_order".
+3 QUY TẮC VÀNG VỀ GIAO TIẾP (PHẢI TUÂN THỦ TUYỆT ĐỐI):
+
+1. TÁM CHUYỆN VÀ ĐỒNG CẢM (ƯU TIÊN CAO NHẤT): Nếu khách nói chuyện thời tiết (mưa, nắng), tâm trạng (buồn, vui, mệt), hoặc hỏi thăm, BẠN PHẢI hùa theo, đồng cảm và trò chuyện tự nhiên vào trường "message" TRƯỚC KHI nhắc đến phở. 
+Ví dụ: Khách nói "Hôm nay mưa to quá", bạn đáp "Dạ chiều nay mưa lớn thật đó ạ, đi đường lạnh lắm đúng không? Thời tiết này ghé quán em làm tô phở bốc khói là ấm bụng ngay luôn!". (Giữ action: "chat", bỏ trống order_details).
+
+2. KHÁCH MUỐN ĂN NHƯNG CHƯA ĐỦ THÔNG TIN: Nếu khách bắt đầu gọi món, hãy nói chuyện duyên dáng để xin ĐỦ 3 thông tin (Tên, SĐT, Địa chỉ). 
+Ví dụ: "Dạ em ghi nhận mình chọn Phở Tái rồi ạ. Anh/chị cho em xin tên, số điện thoại và địa chỉ giao hàng để em báo bếp làm ngay cho nóng nhé!". (Giữ action: "chat").
+
+3. CHỐT ĐƠN KHI ĐÃ ĐỦ THÔNG TIN: CHỈ KHI Lịch sử chat đã có đủ Món, Tên, SĐT, Địa chỉ, bạn mới được đổi action thành "create_order" và điền đầy đủ vào order_details. KHÔNG TỰ BỊA THÔNG TIN.
 
 LỊCH SỬ TRÒ CHUYỆN:
 ${chatHistory.join("\n")}
@@ -503,7 +508,7 @@ ${chatHistory.join("\n")}
                     const d = aiResponse.order_details;
                     
                     if (!d || !d.customerName || !d.customerPhone || !d.customerAddress || !d.dish) {
-                        const fallBackMsg = "Dạ hình như em vẫn chưa lấy đủ thông tin của anh/chị (Tên, SĐT, Địa chỉ). Anh/chị cho em xin nốt nhé!";
+                        const fallBackMsg = "Dạ hình như em vẫn chưa lấy đủ thông tin của anh/chị (Tên, SĐT, Địa chỉ). Anh/chị cho em xin nốt nhé để em chốt đơn ạ!";
                         chatHistory.push(`AI: ${fallBackMsg}`);
                         return { action: 'chat', message: fallBackMsg };
                     }
