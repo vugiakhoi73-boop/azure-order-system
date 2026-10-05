@@ -19,7 +19,7 @@ app.cosmosDB('ProcessAlert', {
                     // Chuyển sang định dạng Embed có khung của Discord
                     const discordMessage = {
                         embeds: [{
-                            title: "🍜 CÓ ĐƠN HÀNG MỚI!",
+                            title: "🍜 CÓ ĐƠN HÀNG MỚI",
                             color: 15105570, // Màu cam nhạt báo hiệu đơn mới
                             fields: [
                                 { name: "Mã đơn", value: order.id, inline: true },
