@@ -12,9 +12,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Đã đăng ký PWA thành công'))
-                    .catch(err => console.error('Lỗi đăng ký PWA:', err));
+                navigator.serviceWorker.register('sw.js').catch(err => console.error('Lỗi PWA:', err));
             });
         }
     </script>
@@ -41,7 +39,6 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
         .selected-item-display { background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid #dc3545; margin-bottom: 15px; }
         
-        /* Chatbot CSS */
         .chat-widget { position: fixed; bottom: 30px; right: 30px; z-index: 1000; }
         .chat-btn { background-color: #198754; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.3s; display: flex; align-items: center; justify-content: center; }
         .chat-btn:hover { transform: scale(1.1); }
@@ -83,7 +80,7 @@
                     </div>
                     <div class="col-md-6">
                         <div class="food-card" onclick="selectDish('Phở Bò Nạm', 50000, this)">
-                            <img src="https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=500&q=80" alt="Phở Bò Nạm" class="food-img">
+                            <img src="https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=500&q=80" alt="Phở Bò Nạm" class="food-img">
                             <div class="p-3 text-center">
                                 <h5 class="fw-bold mb-1">Phở Bò Nạm</h5>
                                 <p class="text-muted small mb-2">Thịt nạm giòn sần sật, mỡ gầu béo ngậy hòa quyện gia vị quế hồi.</p>
@@ -93,7 +90,7 @@
                     </div>
                     <div class="col-md-6">
                         <div class="food-card" onclick="selectDish('Phở Đặc Biệt', 65000, this)">
-                            <img src="https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=500&q=80" alt="Phở Đặc Biệt" class="food-img">
+                            <img src="https://images.unsplash.com/photo-1635088608796-037142a7813a?auto=format&fit=crop&w=500&q=80" alt="Phở Đặc Biệt" class="food-img">
                             <div class="p-3 text-center">
                                 <h5 class="fw-bold mb-1">Phở Đặc Biệt</h5>
                                 <p class="text-muted small mb-2">Tái, nạm, gầu, gân, bò viên kèm trứng chần bổ dưỡng.</p>
@@ -167,7 +164,7 @@
                 <span class="close-btn" onclick="toggleChat()">&times;</span>
             </div>
             <div class="chat-messages" id="chatMessages">
-                <div class="message msg-bot">Dạ Quán Phở Serverless xin chào! Em có thể giúp gì cho anh/chị ạ? Đang mưa lạnh mà làm tô phở thì hết sẩy luôn! 🍜</div>
+                <div class="message msg-bot">Dạ Quán Phở Serverless xin chào! Em có thể giúp gì cho anh/chị ạ? 🍜</div>
             </div>
             <div class="chat-input">
                 <input type="text" id="aiInput" placeholder="Nhắn tin cho quán..." onkeypress="handleAIKeyPress(event)">
@@ -182,7 +179,7 @@
     <script>
         const API_BASE = "https://fn-order-vugiakhoi-btbzhyd6h6ahc7bw.southeastasia-01.azurewebsites.net/api";
         const BANK_ID = "MB"; 
-        const ACCOUNT_NO = "090000000000"; 
+        const ACCOUNT_NO = "090000000000"; // Thay số tài khoản thật của bạn vào đây
         const ACCOUNT_NAME = "VU GIA KHOI";
 
         const OLLAMA_API_URL = "http://localhost:11434/api/generate";
@@ -256,31 +253,43 @@
             chatHistory.push(`Khách: ${text}`);
             if (chatHistory.length > 10) chatHistory.shift(); 
 
-            // LỚP BẢO VỆ 1: PROMPT ENGINEERING CHẶT CHẼ
-            const systemPrompt = `Bạn là nhân viên AI vô cùng duyên dáng, lém lỉnh và hiểu tâm lý khách hàng của Quán Phở Serverless. 
-DỮ LIỆU THỰC ĐƠN:
-- Phở Bò Tái: 45000
-- Phở Bò Nạm: 50000
-- Phở Đặc Biệt: 65000
+            const systemPrompt = `Bạn là nhân viên AI của Quán Phở Serverless.
+DỮ LIỆU THỰC ĐƠN: Phở Bò Tái (45000), Phở Bò Nạm (50000), Phở Đặc Biệt (65000).
 
-MỤC TIÊU DUY NHẤT LÀ TRẢ VỀ JSON CÓ CẤU TRÚC SAU (Không kèm bất kỳ text nào khác):
+BẠN LÀ MỘT API. BẠN CHỈ ĐƯỢC PHÉP TRẢ VỀ 1 OBJECT JSON DUY NHẤT. KHÔNG ĐƯỢC CÓ BẤT KỲ CHỮ NÀO BÊN NGOÀI JSON.
+
+ĐỊNH DẠNG BẮT BUỘC:
 {
-    "message": "Câu nói đáp lại khách",
+    "message": "Câu nói giao tiếp tự nhiên của bạn (TUYỆT ĐỐI KHÔNG chứa code, dấu ngoặc nhọn hay cấu trúc JSON ở đây)",
     "action": "chat" hoặc "create_order",
     "order_details": {
         "dish": "Tên món",
-        "price": Giá tiền,
+        "price": Số tiền,
         "customerName": "Tên",
         "customerPhone": "SĐT",
         "customerAddress": "Địa chỉ"
     }
 }
 
+VÍ DỤ MẪU KHI KHÁCH ĐÃ CHO ĐỦ THÔNG TIN:
+Khách: "Cho 1 phở tái, mình là Khôi, 0901234, giao Trường Cao đẳng Công nghệ Thủ Đức"
+AI BẮT BUỘC PHẢI TRẢ VỀ JSON SAU:
+{
+    "message": "Dạ em đã nhận đủ thông tin. Đơn hàng của Khôi đang được đẩy xuống bếp và hệ thống Discord nhé!",
+    "action": "create_order",
+    "order_details": {
+        "dish": "Phở Bò Tái",
+        "price": 45000,
+        "customerName": "Khôi",
+        "customerPhone": "0901234",
+        "customerAddress": "Trường Cao đẳng Công nghệ Thủ Đức"
+    }
+}
+
 QUY TẮC SỐNG CÒN:
-1. Giao tiếp siêu tự nhiên: Nếu khách chào, hỏi thăm, tám chuyện (ví dụ: "chào em", "quán có ngon không", "hôm nay buồn quá"). Hãy đáp lại đầy cảm xúc, dí dỏm, đồng cảm. Giữ action="chat".
-2. Thu thập thông tin: Nếu khách nói muốn ăn phở, bạn khéo léo xin Tên, Số điện thoại, Địa chỉ giao hàng. Giữ action="chat".
-3. CHỈ CHỐT ĐƠN KHI ĐÃ ĐỦ THÔNG TIN: Nếu KHÁCH CHƯA CUNG CẤP ĐỦ cả Tên, SĐT và Địa chỉ, TUYỆT ĐỐI KHÔNG dùng action="create_order". Bạn BẮT BUỘC giữ action="chat" và nhắc khách còn thiếu gì.
-4. Chốt đơn: Khi đã thu thập ĐẦY ĐỦ 4 thông tin (Món, Tên, SĐT, Địa chỉ), hãy chuyển action="create_order" và điền chuẩn xác dữ liệu. Lời nhắn chốt đơn hãy báo rằng đơn đang được đẩy qua Kitchen và Discord!
+1. Giao tiếp phiếm -> action: "chat".
+2. Nếu khách muốn đặt món nhưng THIẾU 1 trong 3 thông tin (Tên, SĐT, Địa chỉ) -> action: "chat", hỏi xin thông tin thiếu.
+3. NẾU ĐÃ ĐỦ THÔNG TIN MÓN, TÊN, SĐT, ĐỊA CHỈ -> BẮT BUỘC dùng action: "create_order" và điền đầy đủ vào order_details.
 
 LỊCH SỬ TRÒ CHUYỆN:
 ${chatHistory.join("\n")}
@@ -301,30 +310,31 @@ ${chatHistory.join("\n")}
                 if (!res.ok) throw new Error("Lỗi API Ollama");
                 const data = await res.json();
                 
-                const aiResponse = JSON.parse(data.response);
+                // Tiền xử lý dữ liệu để chống lỗi AI tự ý thêm ký tự markdown (```json ... ```)
+                let rawResponse = data.response;
+                rawResponse = rawResponse.replace(/```json/g, '').replace(/```/g, '').trim();
                 
-                // LỚP BẢO VỆ 2: BỘ LỌC JAVASCRIPT
+                const aiResponse = JSON.parse(rawResponse);
+                
                 if (aiResponse.action === 'create_order') {
                     const d = aiResponse.order_details;
-                    // Nếu AI ngáo, chốt đơn mà trích xuất thiếu dữ liệu -> Ép nó quay lại hỏi khách
+                    
                     if (!d || !d.customerName || !d.customerPhone || !d.customerAddress || !d.dish) {
                         const fallBackMsg = "Dạ hệ thống báo là em vẫn chưa lấy đủ thông tin của anh/chị (Tên, SĐT, Địa chỉ). Anh/chị cho em xin nốt để em báo nhà bếp lên đơn nghen!";
                         chatHistory.push(`AI: ${fallBackMsg}`);
                         return { action: 'chat', message: fallBackMsg };
                     }
                     
-                    // Nếu đủ thông tin thực sự
                     chatHistory.push(`AI: ${aiResponse.message}`);
                     executeAzureOrder(d.dish, d.price, d.customerName, d.customerPhone, d.customerAddress);
                     return { action: 'order', message: aiResponse.message + "\n\n🤖 Đang bắn tín hiệu đồng bộ lên nhà bếp (Kitchen) và kênh Discord..." };
                 }
 
-                // Nhánh chat bình thường
                 chatHistory.push(`AI: ${aiResponse.message}`);
                 return { action: 'chat', message: aiResponse.message };
 
             } catch (err) {
-                console.error("Lỗi AI:", err);
+                console.error("Lỗi AI hoặc Parse JSON:", err);
                 return { action: 'chat', message: "Hệ thống AI đang khởi động, anh/chị vui lòng nhập tay vào form bên cạnh giúp em nhé!" };
             }
         }
@@ -367,7 +377,7 @@ ${chatHistory.join("\n")}
                     btn.innerHTML = `<i class="fa-solid fa-check me-2"></i>Chờ thanh toán...`;
                 } else {
                     const errMsg = data.error || data.details || "Thiếu dữ liệu";
-                    appendMessage('bot', `⚠️️ Lỗi từ Azure: ${errMsg}. Xin vui lòng kiểm tra lại thông tin.`);
+                    appendMessage('bot', `⚠ Lỗi từ Azure: ${errMsg}. Xin vui lòng kiểm tra lại thông tin.`);
                     btn.disabled = false;
                     btn.innerHTML = `<i class="fa-solid fa-wallet me-2"></i>TẠO ĐƠN & THANH TOÁN`;
                 }
