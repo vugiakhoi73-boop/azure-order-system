@@ -22,36 +22,235 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        body { font-family: 'Nunito', sans-serif; background-color: #f4f7f6; color: #333; }
-        .hero-section { background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=1920&q=80') center/cover; color: white; padding: 80px 0; text-align: center; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; margin-bottom: 40px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .brand-title { font-weight: 800; font-size: 3rem; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-        .food-card { background: white; border-radius: 16px; overflow: hidden; border: 2px solid transparent; transition: all 0.3s ease; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.05); height: 100%; }
-        .food-card:hover { transform: translateY(-5px); box-shadow: 0 12px 24px rgba(0,0,0,0.15); }
-        .food-card.active { border-color: #dc3545; box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.2); }
-        .food-img { width: 100%; height: 200px; object-fit: cover; }
-        .price-tag { color: #dc3545; font-weight: 700; font-size: 1.25rem; }
-        .cart-section { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); position: sticky; top: 20px; }
-        .form-control:focus { border-color: #dc3545; box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25); }
-        .btn-order { background-color: #dc3545; border: none; padding: 14px; font-size: 1.1rem; border-radius: 10px; transition: all 0.2s; }
-        .btn-order:hover:not(:disabled) { background-color: #bb2d3b; transform: scale(1.02); }
-        .qr-container { display: none; text-align: center; animation: fadeIn 0.5s ease-in-out; background: #fff; padding: 20px; border-radius: 12px; border: 2px dashed #198754; margin-top: 20px; }
-        .qr-img { width: 100%; max-width: 250px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-        .selected-item-display { background: #f8f9fa; padding: 12px; border-radius: 8px; border-left: 4px solid #dc3545; margin-bottom: 15px; }
+        body { 
+            font-family: 'Nunito', sans-serif; 
+            background-color: #f4f7f6; 
+            color: #333; 
+        }
         
-        .chat-widget { position: fixed; bottom: 30px; right: 30px; z-index: 1000; }
-        .chat-btn { background-color: #198754; color: white; border: none; width: 60px; height: 60px; border-radius: 50%; font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); cursor: pointer; transition: transform 0.3s; display: flex; align-items: center; justify-content: center; }
-        .chat-btn:hover { transform: scale(1.1); }
-        .chat-window { display: none; position: absolute; bottom: 80px; right: 0; width: 350px; height: 450px; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); flex-direction: column; overflow: hidden; }
-        .chat-header { background: #198754; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-        .chat-header .close-btn { cursor: pointer; font-size: 20px; }
-        .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #f8f9fa; scroll-behavior: smooth; }
-        .message { max-width: 85%; padding: 10px 15px; border-radius: 15px; font-size: 0.95rem; white-space: pre-line; word-wrap: break-word; }
-        .msg-bot { background: #e9ecef; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; }
-        .msg-user { background: #198754; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .chat-input { display: flex; padding: 10px; border-top: 1px solid #dee2e6; background: white; }
-        .chat-input input { flex: 1; border: 1px solid #ced4da; border-radius: 20px; padding: 8px 15px; outline: none; }
-        .chat-input button { background: none; border: none; color: #198754; font-size: 20px; padding: 0 10px; cursor: pointer; }
+        .hero-section { 
+            background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=1920&q=80') center/cover; 
+            color: white; 
+            padding: 80px 0; 
+            text-align: center; 
+            border-bottom-left-radius: 30px; 
+            border-bottom-right-radius: 30px; 
+            margin-bottom: 40px; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1); 
+        }
+        
+        .brand-title { 
+            font-weight: 800; 
+            font-size: 3rem; 
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5); 
+        }
+        
+        .food-card { 
+            background: white; 
+            border-radius: 16px; 
+            overflow: hidden; 
+            border: 2px solid transparent; 
+            transition: all 0.3s ease; 
+            cursor: pointer; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+            height: 100%; 
+        }
+        
+        .food-card:hover { 
+            transform: translateY(-5px); 
+            box-shadow: 0 12px 24px rgba(0,0,0,0.15); 
+        }
+        
+        .food-card.active { 
+            border-color: #dc3545; 
+            box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.2); 
+        }
+        
+        .food-img { 
+            width: 100%; 
+            height: 200px; 
+            object-fit: cover; 
+        }
+        
+        .price-tag { 
+            color: #dc3545; 
+            font-weight: 700; 
+            font-size: 1.25rem; 
+        }
+        
+        .cart-section { 
+            background: white; 
+            border-radius: 16px; 
+            padding: 24px; 
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08); 
+            position: sticky; 
+            top: 20px; 
+        }
+        
+        .form-control:focus { 
+            border-color: #dc3545; 
+            box-shadow: 0 0 0 0.25rem rgba(220, 53, 69, 0.25); 
+        }
+        
+        .btn-order { 
+            background-color: #dc3545; 
+            border: none; 
+            padding: 14px; 
+            font-size: 1.1rem; 
+            border-radius: 10px; 
+            transition: all 0.2s; 
+        }
+        
+        .btn-order:hover:not(:disabled) { 
+            background-color: #bb2d3b; 
+            transform: scale(1.02); 
+        }
+        
+        .qr-container { 
+            display: none; 
+            text-align: center; 
+            animation: fadeIn 0.5s ease-in-out; 
+            background: #fff; 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 2px dashed #198754; 
+            margin-top: 20px; 
+        }
+        
+        .qr-img { 
+            width: 100%; 
+            max-width: 250px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+        }
+        
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(-10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        
+        .selected-item-display { 
+            background: #f8f9fa; 
+            padding: 12px; 
+            border-radius: 8px; 
+            border-left: 4px solid #dc3545; 
+            margin-bottom: 15px; 
+        }
+        
+        /* CSS KHUNG CHAT */
+        .chat-widget { 
+            position: fixed; 
+            bottom: 30px; 
+            right: 30px; 
+            z-index: 1000; 
+        }
+        
+        .chat-btn { 
+            background-color: #198754; 
+            color: white; 
+            border: none; 
+            width: 60px; 
+            height: 60px; 
+            border-radius: 50%; 
+            font-size: 24px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+            cursor: pointer; 
+            transition: transform 0.3s; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        
+        .chat-btn:hover { 
+            transform: scale(1.1); 
+        }
+        
+        .chat-window { 
+            display: none; 
+            position: absolute; 
+            bottom: 80px; 
+            right: 0; 
+            width: 350px; 
+            height: 450px; 
+            background: white; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
+        
+        .chat-header { 
+            background: #198754; 
+            color: white; 
+            padding: 15px; 
+            font-weight: bold; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+        }
+        
+        .chat-header .close-btn { 
+            cursor: pointer; 
+            font-size: 20px; 
+        }
+        
+        .chat-messages { 
+            flex: 1; 
+            padding: 15px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; 
+            background: #f8f9fa; 
+            scroll-behavior: smooth; 
+        }
+        
+        .message { 
+            max-width: 85%; 
+            padding: 10px 15px; 
+            border-radius: 15px; 
+            font-size: 0.95rem; 
+            white-space: pre-line; 
+            word-wrap: break-word; 
+        }
+        
+        .msg-bot { 
+            background: #e9ecef; 
+            color: #333; 
+            align-self: flex-start; 
+            border-bottom-left-radius: 2px; 
+        }
+        
+        .msg-user { 
+            background: #198754; 
+            color: white; 
+            align-self: flex-end; 
+            border-bottom-right-radius: 2px; 
+        }
+        
+        .chat-input { 
+            display: flex; 
+            padding: 10px; 
+            border-top: 1px solid #dee2e6; 
+            background: white; 
+        }
+        
+        .chat-input input { 
+            flex: 1; 
+            border: 1px solid #ced4da; 
+            border-radius: 20px; 
+            padding: 8px 15px; 
+            outline: none; 
+        }
+        
+        .chat-input button { 
+            background: none; 
+            border: none; 
+            color: #198754; 
+            font-size: 20px; 
+            padding: 0 10px; 
+            cursor: pointer; 
+        }
     </style>
 </head>
 <body>
@@ -80,7 +279,7 @@
                     </div>
                     <div class="col-md-6">
                         <div class="food-card" onclick="selectDish('Phở Bò Nạm', 50000, this)">
-                            <img src="https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=500&q=80" alt="Phở Bò Nạm" class="food-img">
+                            <img src="pho nam.jpg" alt="Phở Bò Nạm" class="food-img">
                             <div class="p-3 text-center">
                                 <h5 class="fw-bold mb-1">Phở Bò Nạm</h5>
                                 <p class="text-muted small mb-2">Thịt nạm giòn sần sật, mỡ gầu béo ngậy hòa quyện gia vị quế hồi.</p>
@@ -90,7 +289,7 @@
                     </div>
                     <div class="col-md-6">
                         <div class="food-card" onclick="selectDish('Phở Đặc Biệt', 65000, this)">
-                            <img src="https://images.unsplash.com/photo-1635088608796-037142a7813a?auto=format&fit=crop&w=500&q=80" alt="Phở Đặc Biệt" class="food-img">
+                            <img src="pho-db.jpg" alt="Phở Đặc Biệt" class="food-img">
                             <div class="p-3 text-center">
                                 <h5 class="fw-bold mb-1">Phở Đặc Biệt</h5>
                                 <p class="text-muted small mb-2">Tái, nạm, gầu, gân, bò viên kèm trứng chần bổ dưỡng.</p>
@@ -156,7 +355,6 @@
         </div>
     </div>
 
-    <!-- Chatbot Widget -->
     <div class="chat-widget">
         <div class="chat-window" id="chatWindow">
             <div class="chat-header">
@@ -179,7 +377,7 @@
     <script>
         const API_BASE = "https://fn-order-vugiakhoi-btbzhyd6h6ahc7bw.southeastasia-01.azurewebsites.net/api";
         const BANK_ID = "MB"; 
-        const ACCOUNT_NO = "090000000000"; // Thay số tài khoản thật của bạn vào đây
+        const ACCOUNT_NO = "090000000000"; 
         const ACCOUNT_NAME = "VU GIA KHOI";
 
         const OLLAMA_API_URL = "http://localhost:11434/api/generate";
@@ -253,43 +451,29 @@
             chatHistory.push(`Khách: ${text}`);
             if (chatHistory.length > 10) chatHistory.shift(); 
 
+            // LUẬT CẤM BỊA ĐẶT THÔNG TIN CHO AI
             const systemPrompt = `Bạn là nhân viên AI của Quán Phở Serverless.
 DỮ LIỆU THỰC ĐƠN: Phở Bò Tái (45000), Phở Bò Nạm (50000), Phở Đặc Biệt (65000).
 
-BẠN LÀ MỘT API. BẠN CHỈ ĐƯỢC PHÉP TRẢ VỀ 1 OBJECT JSON DUY NHẤT. KHÔNG ĐƯỢC CÓ BẤT KỲ CHỮ NÀO BÊN NGOÀI JSON.
+BẠN LÀ MỘT API TRẢ VỀ JSON. KHÔNG ĐƯỢC CÓ BẤT KỲ CHỮ NÀO BÊN NGOÀI JSON.
 
-ĐỊNH DẠNG BẮT BUỘC:
+ĐỊNH DẠNG JSON BẮT BUỘC:
 {
-    "message": "Câu nói giao tiếp tự nhiên của bạn (TUYỆT ĐỐI KHÔNG chứa code, dấu ngoặc nhọn hay cấu trúc JSON ở đây)",
+    "message": "Câu nói giao tiếp tự nhiên của bạn",
     "action": "chat" hoặc "create_order",
     "order_details": {
         "dish": "Tên món",
-        "price": Số tiền,
-        "customerName": "Tên",
+        "price": Giá tiền,
+        "customerName": "Tên khách",
         "customerPhone": "SĐT",
         "customerAddress": "Địa chỉ"
     }
 }
 
-VÍ DỤ MẪU KHI KHÁCH ĐÃ CHO ĐỦ THÔNG TIN:
-Khách: "Cho 1 phở tái, mình là Khôi, 0901234, giao Trường Cao đẳng Công nghệ Thủ Đức"
-AI BẮT BUỘC PHẢI TRẢ VỀ JSON SAU:
-{
-    "message": "Dạ em đã nhận đủ thông tin. Đơn hàng của Khôi đang được đẩy xuống bếp và hệ thống Discord nhé!",
-    "action": "create_order",
-    "order_details": {
-        "dish": "Phở Bò Tái",
-        "price": 45000,
-        "customerName": "Khôi",
-        "customerPhone": "0901234",
-        "customerAddress": "Trường Cao đẳng Công nghệ Thủ Đức"
-    }
-}
-
-QUY TẮC SỐNG CÒN:
-1. Giao tiếp phiếm -> action: "chat".
-2. Nếu khách muốn đặt món nhưng THIẾU 1 trong 3 thông tin (Tên, SĐT, Địa chỉ) -> action: "chat", hỏi xin thông tin thiếu.
-3. NẾU ĐÃ ĐỦ THÔNG TIN MÓN, TÊN, SĐT, ĐỊA CHỈ -> BẮT BUỘC dùng action: "create_order" và điền đầy đủ vào order_details.
+QUY TẮC SỐNG CÒN (BẮT BUỘC TUÂN THỦ):
+1. KHÔNG ĐƯỢC TỰ BỊA ĐẶT THÔNG TIN: Tuyệt đối CHỈ lấy Tên, SĐT, Địa chỉ nếu Khách ĐÃ THẬT SỰ NHẬP vào trong LỊCH SỬ TRÒ CHUYỆN.
+2. NẾU KHÁCH CHƯA CHO ĐỦ THÔNG TIN: Đặt action="chat", giữ các trường chưa biết là chuỗi rỗng (""), và dùng trường "message" để HỎI XIN phần thông tin còn thiếu.
+3. CHỈ KHI KHÁCH ĐÃ CHO ĐỦ CẢ MÓN, TÊN, SĐT VÀ ĐỊA CHỈ: Mới được đổi action="create_order".
 
 LỊCH SỬ TRÒ CHUYỆN:
 ${chatHistory.join("\n")}
@@ -310,7 +494,6 @@ ${chatHistory.join("\n")}
                 if (!res.ok) throw new Error("Lỗi API Ollama");
                 const data = await res.json();
                 
-                // Tiền xử lý dữ liệu để chống lỗi AI tự ý thêm ký tự markdown (```json ... ```)
                 let rawResponse = data.response;
                 rawResponse = rawResponse.replace(/```json/g, '').replace(/```/g, '').trim();
                 
@@ -320,7 +503,7 @@ ${chatHistory.join("\n")}
                     const d = aiResponse.order_details;
                     
                     if (!d || !d.customerName || !d.customerPhone || !d.customerAddress || !d.dish) {
-                        const fallBackMsg = "Dạ hệ thống báo là em vẫn chưa lấy đủ thông tin của anh/chị (Tên, SĐT, Địa chỉ). Anh/chị cho em xin nốt để em báo nhà bếp lên đơn nghen!";
+                        const fallBackMsg = "Dạ hình như em vẫn chưa lấy đủ thông tin của anh/chị (Tên, SĐT, Địa chỉ). Anh/chị cho em xin nốt nhé!";
                         chatHistory.push(`AI: ${fallBackMsg}`);
                         return { action: 'chat', message: fallBackMsg };
                     }
