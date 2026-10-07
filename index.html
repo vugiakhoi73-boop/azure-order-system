@@ -355,6 +355,7 @@
         </div>
     </div>
 
+    <!-- Chatbot Widget -->
     <div class="chat-widget">
         <div class="chat-window" id="chatWindow">
             <div class="chat-header">
@@ -379,9 +380,6 @@
         const BANK_ID = "MB"; 
         const ACCOUNT_NO = "090000000000"; 
         const ACCOUNT_NAME = "VU GIA KHOI";
-
-        const OLLAMA_API_URL = "http://localhost:11434/api/generate";
-        let chatHistory = []; 
 
         let currentDish = "Phở Bò Tái";
         let currentAmount = 45000;
@@ -429,10 +427,47 @@
 
             const typingId = appendMessage('bot', 'AI đang suy nghĩ...');
 
-            const aiResponse = await simulateAIProcess(userText);
-            
-            document.getElementById(typingId).remove();
-            appendMessage('bot', aiResponse.message);
+            try {
+                // Gọi sang Backend AI Gateway trung gian (Node.js chạy ở cổng 3000)
+                const res = await fetch('http://localhost:3000/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: userText })
+                });
+
+                const data = await res.json();
+                document.getElementById(typingId).remove();
+
+                // Nếu Backend phát hiện đủ thông tin và đã tạo đơn thành công trên Azure
+                if (data.order && data.order.success) {
+                    const o = data.order;
+                    
+                    document.getElementById('customerName').value = o.customerName;
+                    document.getElementById('customerPhone').value = o.customerPhone;
+                    document.getElementById('customerAddress').value = o.customerAddress;
+                    
+                    const targetCard = Array.from(document.querySelectorAll('.food-card')).find(el => el.innerText.includes(o.dish));
+                    if(targetCard) selectDish(o.dish, o.price, targetCard);
+
+                    const qrUrl = `https://img.vietqr.io/image/${BANK_ID}-${ACCOUNT_NO}-compact2.png?amount=${o.price}&addInfo=${o.orderId}&accountName=${encodeURIComponent(ACCOUNT_NAME)}`;
+                    document.getElementById('qrImage').src = qrUrl;
+                    document.getElementById('displayOrderId').innerText = o.orderId;
+                    document.getElementById('qrSection').style.display = 'block';
+                    
+                    const btn = document.getElementById('btnSubmit');
+                    btn.innerHTML = `<i class="fa-solid fa-check me-2"></i>Chờ thanh toán...`;
+                    btn.disabled = true;
+
+                    appendMessage('bot', data.reply + "\n\n🤖 Đã tự động tạo đơn, bắn thông báo qua Kitchen và Discord thành công!");
+                } else {
+                    appendMessage('bot', data.reply);
+                }
+
+            } catch (err) {
+                console.error("Lỗi kết nối Gateway:", err);
+                document.getElementById(typingId).remove();
+                appendMessage('bot', "Không thể kết nối tới AI Gateway trên cổng 3000! Hãy đảm bảo bạn đã bật file 'server.js'.");
+            }
         }
 
         function appendMessage(sender, text) {
@@ -445,78 +480,6 @@
             chatMessages.appendChild(msgDiv);
             chatMessages.scrollTop = chatMessages.scrollHeight; 
             return msgDiv.id;
-        }
-
-        async function simulateAIProcess(text) {
-            chatHistory.push(`Khách: ${text}`);
-            if (chatHistory.length > 12) chatHistory.shift(); 
-
-            const systemPrompt = `Bạn là nhân viên AI siêu thông minh và lém lỉnh của Quán Phở Serverless.
-DỮ LIỆU THỰC ĐƠN: Phở Bò Tái (45000), Phở Bò Nạm (50000), Phở Đặc Biệt (65000).
-
-BẠN BẮT BUỘC TRẢ VỀ ĐỊNH DẠNG JSON SAU (KHÔNG CÓ TEXT NÀO NGOÀI JSON):
-{
-    "message": "Câu nói của bạn",
-    "action": "chat" hoặc "create_order",
-    "order_details": {
-        "dish": "Tên món chuẩn trong thực đơn",
-        "price": Giá tiền (số),
-        "customerName": "Tên khách",
-        "customerPhone": "SĐT",
-        "customerAddress": "Địa chỉ"
-    }
-}
-
-QUY TẮC VẬN HÀNH:
-1. Giao tiếp tự nhiên: Nếu khách chào hỏi, tám chuyện (thời tiết, vui buồn), hãy đối đáp cực kỳ thân thiện, duyên dáng và giữ action="chat".
-2. Thu thập & Nhớ thông tin: Khi khách gọi món hoặc cung cấp thông tin (Tên, SĐT, Địa chỉ), hãy ghi nhớ xuyên suốt các câu chat trước đó. Nếu còn thiếu, hãy dùng action="chat" để hỏi xin phần còn lại.
-3. CHỐT ĐƠN TỨC THÌ: Ngay khi nhìn thấy trong Lịch sử trò chuyện đã có ĐỦ 4 yếu tố (Món ăn, Tên khách, SĐT, Địa chỉ), BẠN PHẢI LẬP TỨC đổi action thành "create_order", điền chính xác vào order_details, và ở trường "message" hãy thông báo đơn đang được đẩy qua Kitchen và Discord.
-
-LỊCH SỬ TRÒ CHUYỆN:
-${chatHistory.join("\n")}
-`;
-
-            try {
-                const res = await fetch(OLLAMA_API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        model: "llama3", 
-                        prompt: systemPrompt,
-                        format: "json", 
-                        stream: false
-                    })
-                });
-
-                if (!res.ok) throw new Error("Lỗi API Ollama");
-                const data = await res.json();
-                
-                let rawResponse = data.response;
-                rawResponse = rawResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-                
-                const aiResponse = JSON.parse(rawResponse);
-                
-                if (aiResponse.action === 'create_order') {
-                    const d = aiResponse.order_details;
-                    
-                    if (!d || !d.customerName || !d.customerPhone || !d.customerAddress || !d.dish) {
-                        const fallBackMsg = "Dạ em thấy vẫn còn thiếu một chút thông tin (Tên, SĐT hoặc Địa chỉ). Anh/chị cho em xin nốt nhé!";
-                        chatHistory.push(`AI: ${fallBackMsg}`);
-                        return { action: 'chat', message: fallBackMsg };
-                    }
-                    
-                    chatHistory.push(`AI: ${aiResponse.message}`);
-                    executeAzureOrder(d.dish, d.price, d.customerName, d.customerPhone, d.customerAddress);
-                    return { action: 'order', message: aiResponse.message + "\n\n🤖 Đang bắn tín hiệu đồng bộ lên nhà bếp (Kitchen) và kênh Discord..." };
-                }
-
-                chatHistory.push(`AI: ${aiResponse.message}`);
-                return { action: 'chat', message: aiResponse.message };
-
-            } catch (err) {
-                console.error("Lỗi AI hoặc Parse JSON:", err);
-                return { action: 'chat', message: "Hệ thống AI đang khởi động, anh/chị vui lòng nhập tay vào form bên cạnh giúp em nhé!" };
-            }
         }
 
         async function executeAzureOrder(dish, price, customerName, customerPhone, customerAddress) {
